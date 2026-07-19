@@ -1,617 +1,276 @@
-
 # Shadow-MSM
 
-Experimental Linux and custom bootloader bring-up for the **Qualcomm MSM6290**, initially targeting the **ZTE Vodafone K3765-Z** USB modem.
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+![Status: Experimental](https://img.shields.io/badge/status-experimental-orange)
+![Target: MSM6290](https://img.shields.io/badge/target-Qualcomm%20MSM6290-3253dc)
+![CPU: ARMv5TEJ](https://img.shields.io/badge/CPU-ARM926EJ--S-0091bd)
 
-Shadow-MSM aims to turn an undocumented late-2000s Qualcomm modem platform into a usable ARM development target by reverse engineering its boot chain, hardware interfaces, firmware formats, and recovery protocols.
+**RAM-first bare-metal bring-up and Linux boot research for legacy Qualcomm
+MSM hardware.**
 
-> **Current state:** arbitrary ARM code can be uploaded and executed entirely from RAM through the factory Qualcomm downloader. NAND flashing is not required for development.
+Shadow-MSM currently targets the **ZTE/Vodafone K3765-Z**, built around the
+Qualcomm MSM6290. The project provides a reproducible path from the legacy
+Qualcomm primary downloader to custom ARM code, a diagnostic stage-0 monitor,
+and a small second-stage bootloader—without modifying NAND.
 
----
+> [!IMPORTANT]
+> Linux is **not booting yet**. Custom ARM code, the stage-0 monitor, RGB LED
+> control, runtime hardware identification, and BL1 0.1 are verified on real
+> hardware. BL1 0.2's non-jumping Linux handoff dry run is built and statically
+> checked, but still awaits its target-side test.
 
-## Project goals
+## Why this exists
 
-- Build a custom RAM-resident monitor and bootloader for MSM6290
-- Reverse engineer the MSM6290 memory map and peripherals
-- Boot a minimal ARM Linux kernel with a built-in initramfs
-- Add UART or USB-based console support
-- Support the onboard RGB status LED
-- Support the watchdog, timer, and interrupt controller
-- Access the onboard microSD slot
-- Eventually boot Linux automatically from microSD or NAND
-- Preserve a reliable stock recovery path
+The MSM6290 predates modern Sahara and Firehose workflows. Public documentation
+and mainline Linux support are scarce, while vendor tools assume a Windows
+flashing environment and provide little visibility into the boot process.
 
-The initial Linux target is intentionally minimal:
+Shadow-MSM takes a deliberately conservative approach:
 
-```text
-Linux zImage
-+ Device Tree
-+ built-in BusyBox initramfs
-+ shell
-````
+- execute experimental code from SDRAM;
+- keep the original boot chain and NAND contents intact;
+- verify every uploaded image with a target-side CRC before calling it;
+- log every command, address, result, and observed reset;
+- establish observable hardware checkpoints before attempting a kernel handoff.
 
-Networking, NAND, USB gadget support, audio, display output, and the original cellular functionality are later goals.
+## Verified target
 
----
+| Component | Identification |
+|---|---|
+| Device | ZTE/Vodafone K3765-Z |
+| Firmware family | `BD_VDFP673A1V1.0.0B04` |
+| SoC | Qualcomm MSM6290 |
+| CPU | ARM926EJ-S r0p5, ARMv5TEJ |
+| CPU MIDR | `0x41069265` |
+| RAM | 32 MiB address window |
+| NAND | Hynix `H8ACS0PL0MCR`/`HSACS0PL0MCR` profile |
+| NAND geometry | 128 MiB data + 4 MiB OOB |
+| PMIC family | Qualcomm PM6658 |
+| Stock runtime | Qualcomm AMSS over OKL4/Quartz |
 
-## Target hardware
+The stock AMSS image maps physical memory from `0x00100000` through
+approximately `0x01F5A000`. Shadow-MSM has also executed with a private stack
+at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 
-### ZTE Vodafone K3765-Z
+## Current achievements
 
-| Component         | Details                                                                 |
-| ----------------- | ----------------------------------------------------------------------- |
-| SoC               | Qualcomm MSM6290                                                        |
-| CPU               | ARM926EJ-S / ARMv5TEJ                                                   |
-| Original system   | Qualcomm AMSS on OKL4                                                   |
-| NAND              | 128 MiB Hynix NAND                                                      |
-| NAND geometry     | 2048-byte pages, 64-byte OOB, 64 pages per block                        |
-| RAM               | Likely approximately 32 MiB, still to be fully verified                 |
-| Storage expansion | microSD                                                                 |
-| Connectivity      | USB, diagnostic interfaces, modem interfaces                            |
-| Indicators        | Multicolor RGB status LED                                               |
-| Cellular          | GSM, EDGE, UMTS, HSUPA                                                  |
-| Audio             | Raw G.711 A-law or μ-law audio through a dedicated USB serial interface |
+- [x] Extracted and mapped the exact OEM firmware package
+- [x] Recovered the matching legacy ARM programmer
+- [x] Entered the pre-Sahara downloader without performing an upgrade
+- [x] Verified legacy PBL RAM-write command `0x0F`
+- [x] Verified PBL execute command `0x05`
+- [x] Executed custom ARMv5 code entirely from RAM
+- [x] Established a stable USB diagnostic stage-0 monitor
+- [x] Added runtime CP15/system-register queries
+- [x] Added bounded target-side CRC32 verification
+- [x] Added bounded second-stage calls with controlled `r0`–`r2`
+- [x] Identified and controlled all RGB LED channels
+- [x] Built and hardware-tested BL1 0.1 with boot logs and system information
+- [x] Built BL1 0.2 Linux-handoff validation and a minimal device tree
+- [ ] Verify BL1 0.2 dry run on the target
+- [ ] Establish an independent post-handoff UART or USB console
+- [ ] Add MSM6290 timer and interrupt-controller support
+- [ ] Reach the first Linux decompressor/kernel banner
+- [ ] Boot a built-in BusyBox initramfs
+- [ ] Add microSD, NAND read-only, USB gadget, and display support
 
-The flash and RAM appear to be combined in a Hynix MCP package:
+## Boot architecture
 
-```text
-Hynix H8ACS0PL0MCR-56M
+```mermaid
+flowchart LR
+    PBL["Qualcomm Boot ROM / legacy PBL"]
+    S0["Shadow-MSM stage-0<br/>0x00800000"]
+    BL1["Shadow-MSM BL1<br/>0x01000000"]
+    ZI["Linux zImage staging<br/>0x01200000"]
+    DTB["Device tree<br/>0x01F80000"]
+    LINUX["Linux<br/>future target: 0x00108000"]
+
+    PBL -->|"RAM upload + execute"| S0
+    S0 -->|"CRC + bounded call"| BL1
+    BL1 -.->|"validated handoff; jump not enabled yet"| ZI
+    DTB -.-> BL1
+    ZI -.-> LINUX
 ```
 
----
-
-## Original boot chain
-
-The stock device appears to boot through:
-
-```text
-Qualcomm Boot ROM / PBL
-        ↓
-QCSBL
-        ↓
-OEMSBL
-        ↓
-OKL4 microkernel
-        ↓
-Qualcomm Quartz / REX environment
-        ↓
-AMSS modem firmware
-```
-
-Shadow-MSM initially reuses the factory PBL download mode:
-
-```text
-PBL download mode
-        ↓
-Upload custom payload to RAM
-        ↓
-Execute at 0x00800000
-        ↓
-Custom monitor or bootloader
-        ↓
-Linux kernel
-```
-
-This allows development without modifying NAND.
-
-A future standalone boot path may be:
-
-```text
-Boot ROM
-        ↓
-QCSBL
-        ↓
-OEMSBL
-        ↓
-Shadow-MSM bootloader in the AMSS partition
-        ↓
-Linux kernel and DTB from microSD
-        ↓
-Linux root filesystem
-```
-
----
-
-## Current progress
-
-### Firmware recovery
-
-The exact Vodafone K3765-Z firmware updater was recovered and statically extracted.
-
-Recovered components include:
-
-```text
-amss.mbn
-amsshd.mbn
-armprg.bin
-efs.mbn
-oemsbl.mbn
-oemsblhd.mbn
-qcsbl.mbn
-qcsblhd_cfgdata.mbn
-partition.mbn
-nandprgcombined.mbn
-nandprghd.mbn
-```
-
-The Qualcomm EFS image was also parsed and reconstructed into a normal directory tree.
-
-### NAND identification
-
-The OEM programmer identifies the NAND geometry as:
-
-```text
-1024 blocks
-64 pages per block
-2048 data bytes per page
-64 OOB bytes per page
-```
-
-Usable NAND size:
-
-```text
-1024 × 64 × 2048 = 134,217,728 bytes
-                   = 128 MiB
-```
-
-Raw size including OOB:
-
-```text
-138,412,032 bytes
-```
-
-### Legacy downloader access
-
-The modem exposes an old pre-Sahara Qualcomm downloader rather than modern Firehose.
-
-Confirmed protocol properties:
-
-```text
-Transport:       USB serial / COM port
-Baud rate:       115200
-Format:          8N1
-Framing:         Qualcomm HDLC
-RAM write cmd:   0x0F
-Execute cmd:     0x05
-Load address:    0x00800000
-Positive ACK:    0x02
-```
-
-A 16-byte RAM-write probe was acknowledged successfully.
-
-### OEM programmer execution
-
-The exact factory `armprg.bin` can be:
-
-1. uploaded completely into RAM;
-2. executed at `0x00800000`;
-3. observed reinitializing the USB interface.
-
-No NAND erase or program operation is required.
-
-### Arbitrary code execution
-
-Custom raw ARM payloads have been uploaded and executed.
-
-A one-instruction payload:
-
-```asm
-1:
-    b 1b
-```
-
-runs for several seconds before the hardware watchdog resets the SoC.
-
-This strongly confirms:
-
-```text
-Arbitrary RAM write     ✅
-Arbitrary ARM execution ✅
-Automatic recovery      ✅
-NAND untouched          ✅
-```
-
-### Watchdog work
-
-The next major bring-up task is locating the exact MSM6290 watchdog service or disable sequence.
-
-Current evidence suggests custom payloads execute successfully but reset after a consistent watchdog timeout.
-
-### RGB LED
-
-The board includes a multicolor status LED.
-
-Known stock behavior includes:
-
-* green when registered to a cellular network;
-* other colors during startup, searching, and activity.
-
-RGB control is being reverse engineered for use as an early boot debugging mechanism.
-
-Proposed boot indicators:
-
-```text
-Red      bootloader entered
-Yellow   RAM and hardware setup complete
-Blue     kernel loaded
-Green    jumping to Linux
-Blink N  error code N
-```
-
----
-
-## Linux bring-up strategy
-
-The first Linux boot will happen entirely from RAM.
-
-Development sequence:
-
-```text
-Host PC
-  → uploads Shadow-MSM stage-1 loader
-  → uploads zImage
-  → uploads DTB
-  → loader configures CPU state
-  → loader jumps into Linux
-```
-
-The first kernel will include:
-
-* ARM926EJ-S support
-* one CPU
-* no modules
-* built-in BusyBox initramfs
-* Device Tree
-* early debug output
-* minimal timer support
-* minimal interrupt-controller support
-* watchdog handling
-* no NAND dependency
-* no microSD dependency
-* no networking
-* no framebuffer
-* no sound
-
-Initial success target:
-
-```text
-Booting Linux on physical CPU 0x0
-CPU: ARM926EJ-S
-Linux version ...
-Run /init as init process
-/ #
-```
-
----
-
-## Required MSM6290 platform support
-
-Linux already supports the ARM926 CPU architecture, but MSM6290-specific peripherals are undocumented.
-
-Expected new components include:
-
-```text
-arch/arm/mach-msm6290/
-drivers/irqchip/irq-msm6290.c
-drivers/clocksource/timer-msm6290.c
-drivers/watchdog/msm6290_wdt.c
-drivers/tty/serial/msm6290_uart.c
-arch/arm/boot/dts/qcom/msm6290.dtsi
-arch/arm/boot/dts/qcom/msm6290-zte-k3765-z.dts
-```
-
-Later drivers may include:
-
-```text
-drivers/mmc/host/
-drivers/mtd/nand/raw/
-drivers/usb/gadget/
-drivers/leds/
-drivers/gpio/
-```
-
----
-
-## Building a minimal userspace
-
-Buildroot is recommended for the initial root filesystem.
-
-Suggested target:
-
-```text
-Architecture:          ARM little-endian
-CPU variant:           ARM926T / ARM926EJ-S
-ABI:                   EABI
-Floating point:        soft-float
-C library:             musl
-Init:                  BusyBox
-Filesystem image:      cpio
-```
-
-Example dependencies on Ubuntu or WSL:
-
-```bash
-sudo apt update
-
-sudo apt install -y \
-    git build-essential \
-    gcc-arm-linux-gnueabi \
-    binutils-arm-linux-gnueabi \
-    bc bison flex \
-    libssl-dev libelf-dev \
-    libncurses-dev \
-    device-tree-compiler \
-    cpio rsync python3
-```
-
-Clone Buildroot:
-
-```bash
-git clone --depth=1 https://gitlab.com/buildroot.org/buildroot.git
-cd buildroot
-make menuconfig
-make -j"$(nproc)"
-```
-
-Expected root filesystem:
-
-```text
-output/images/rootfs.cpio
-```
-
----
-
-## Building the kernel
-
-A stable Linux branch such as Linux 6.6 is a reasonable starting point.
-
-```bash
-git clone --depth=1 \
-    --branch linux-6.6.y \
-    https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git \
-    linux-msm6290
-
-cd linux-msm6290
-
-make ARCH=arm \
-    CROSS_COMPILE=arm-linux-gnueabi- \
-    multi_v5_defconfig
-```
-
-The generic ARMv5 configuration is only a starting point. MSM6290 platform code must be added before the kernel can boot normally.
-
-Build command:
-
-```bash
-make -j"$(nproc)" \
-    ARCH=arm \
-    CROSS_COMPILE=arm-linux-gnueabi- \
-    zImage dtbs
-```
-
-Expected outputs:
-
-```text
-arch/arm/boot/zImage
-arch/arm/boot/dts/qcom/msm6290-zte-k3765-z.dtb
-```
-
----
-
-## Suggested repository layout
+The stage-0 monitor is based on the initialized OEM ARM programmer runtime so
+the known USB diagnostic transport remains available. BL1 uses its own stack,
+prints hardware and CP15 state, and currently returns cleanly to stage-0.
+
+## RAM layout
+
+| Address range | Purpose |
+|---|---|
+| `0x00100000..0x007FFFFF` | Future decompressed Linux region |
+| `0x00800000..0x00819DC7` | RAM-only stage-0 monitor |
+| `0x01000000` | BL1 load and entry |
+| `0x01200000..0x01EFFFFF` | zImage staging window, 13 MiB maximum |
+| `0x01F80000..0x01F8FFFF` | Reserved DTB window |
+| `0x01FFF000` | BL1 private stack top |
+| `0x02000000` | End of the 32 MiB RAM window |
+
+See [the detailed layout](outputs/K3765_LINUX_RAM_LAYOUT.md).
+
+## Repository layout
 
 ```text
 Shadow-MSM/
 ├── README.md
-├── LICENSE
-├── docs/
-│   ├── hardware.md
-│   ├── boot-chain.md
-│   ├── downloader-protocol.md
-│   ├── memory-map.md
-│   ├── nand-layout.md
-│   └── linux-bringup.md
-├── host/
-│   ├── pbl-uploader/
-│   ├── monitor-client/
-│   └── image-tools/
-├── loader/
-│   ├── stage0/
-│   ├── stage1/
-│   ├── linker/
-│   └── include/
-├── payloads/
-│   ├── hold/
-│   ├── watchdog/
-│   ├── led-test/
-│   └── ram-test/
-├── linux/
-│   ├── patches/
-│   ├── configs/
-│   └── dts/
-├── buildroot/
-│   ├── configs/
-│   └── overlays/
-├── tools/
-│   ├── mbn/
-│   ├── efs/
-│   └── firmware/
-└── captures/
-    └── README.md
+├── work/
+│   ├── firmware-analysis utilities
+│   └── stage-0 / BL1 image builders
+└── outputs/
+    ├── RAM-only host tools and generated images
+    ├── disassembly and address maps
+    ├── BL1_README.md
+    ├── BL1_0.2_DRYRUN_README.md
+    └── TEST_LOG.md
 ```
 
-Proprietary firmware should not be committed to the public repository.
+The complete chronological evidence trail is in
+[`outputs/TEST_LOG.md`](outputs/TEST_LOG.md).
 
-Use hashes and extraction instructions instead.
+## Requirements
 
----
+The current development host is Windows. The tools require:
 
-## Recovery and safety
+- Python 3.9 or newer;
+- [`pyserial`](https://pypi.org/project/pyserial/);
+- [`capstone`](https://pypi.org/project/capstone/);
+- [`keystone-engine`](https://pypi.org/project/keystone-engine/);
+- the correct Windows serial driver for the legacy ZTE downloader interface;
+- a legally obtained copy of the matching K3765-Z stock updater.
 
-This project involves undocumented bootloaders, raw flash access, and custom code execution.
+Install the Python dependencies:
 
-### Current safest development method
+```powershell
+py -3.9 -m pip install pyserial capstone keystone-engine
+```
 
-Use only the factory RAM downloader:
+## Safe quick start: verified BL1 0.1
+
+Start from a fresh legacy downloader session. Replace `COMxx` with the active
+downloader port:
+
+```powershell
+py -3.9 .\outputs\k3765_stage0_load.py COMxx `
+  .\outputs\armprg_stage0_monitor.bin `
+  .\outputs\k3765_stage2_bootloader.bin `
+  --log .\outputs\bl1_load.log
+```
+
+Verify the image in target RAM before executing it:
+
+```powershell
+py -3.9 .\outputs\k3765_stage0_console.py COMxx `
+  crc 0x01000000 2861
+```
+
+Expected:
 
 ```text
-Enter download mode
-→ upload payload to RAM
-→ execute payload
-→ power-cycle to recover
+CRC32: 0xEFF2DC54
 ```
 
-This does not require modifying NAND.
+Run BL1:
 
-### Do not write NAND casually
+```powershell
+py -3.9 .\outputs\k3765_stage0_console.py COMxx `
+  boot 0x01000000 0xA0A0A0A0 0xB1B1B1B1 0xC2C2C2C2 `
+  --log .\outputs\bl1_boot.log
+```
 
-Do not run any NAND erase or program operation unless all of the following are available:
-
-* complete NAND backup;
-* partition-level backups;
-* stock firmware package;
-* working OEM programmer;
-* verified recovery procedure;
-* confirmed partition boundaries;
-* stable power;
-* known-good image format.
-
-Avoid commands or tools that perform:
+Expected final result:
 
 ```text
-erase
-program
-write
-flash
-restore
-download firmware
+RETURN R0: 0x424F4F54
 ```
 
-The Qualcomm boot partitions are especially sensitive:
+`0x424F4F54` is ASCII `BOOT`. After execution, the BL1 CRC changes to
+`0x83FFF9DF` because its 13-byte hexadecimal formatting buffer contains the
+last printed value, `0xC2C2C2C2`; the executable code is unchanged.
 
-```text
-MIBIB
-QCSBL
-OEMSBL
-```
+## Linux-handoff dry run
 
-Corrupting these may prevent normal USB recovery.
+BL1 0.2 validates a header-only zImage fixture and a minimal flattened device
+tree, prints the planned Linux entry registers, and returns `DRY1` without
+jumping.
 
-Experimental writes should initially be restricted to a recoverable application partition such as AMSS, and only after the raw NAND layout has been verified.
+The complete commands, CRCs, and expected output are documented in
+[`outputs/BL1_0.2_DRYRUN_README.md`](outputs/BL1_0.2_DRYRUN_README.md).
 
----
+## RGB diagnostic LED
 
-## Firmware policy
+The K3765-Z multicolor LED is useful as an early bring-up console:
 
-Shadow-MSM does not distribute proprietary Qualcomm, ZTE, Vodafone, or carrier firmware.
+| Color | Control path |
+|---|---|
+| Red | PMIC MPP current sink 1 |
+| Green | PMIC LED channel 0 |
+| Blue | PMIC LED channel 1 |
+| Cyan | Green + blue |
+| White | Red + green + blue |
 
-The repository may contain:
+LED checkpoints can remain available after the resident USB transport is
+discarded during a future non-returning Linux handoff.
 
-* original reverse-engineered code;
-* protocol documentation;
-* extraction scripts;
-* patch files;
-* hashes;
-* open-source bootloader and kernel code;
-* user-created Device Trees;
-* hardware notes.
+## Safety model
 
-Users must obtain legally permitted firmware for their own hardware.
+Shadow-MSM is designed around volatile experimentation:
 
----
+- current loaders write only to the bounded SDRAM window;
+- current payloads do not contain NAND erase or program implementations;
+- BL1 does not link or call the OEM NAND routines;
+- power-cycling removes the experimental code and restores the stock boot path;
+- target-side CRC verification is required before a second-stage call.
 
-## Legal and ethical use
+This is experimental low-level software. A coding error can still hang or reset
+the target. Use only hardware you own, preserve the original updater and
+backups, and inspect every command before running it.
 
-Shadow-MSM is intended for:
+Do **not** substitute QPST's *User Partitions* workflow for these RAM-only
+commands. In Qualcomm terminology that screen performs host-to-device writes.
 
-* research;
-* preservation;
-* interoperability;
-* owner-controlled hardware modification;
-* embedded Linux education;
-* reverse engineering of personally owned devices.
+## Firmware and redistribution
 
-Do not use this project to:
+Shadow-MSM does not grant permission to redistribute Qualcomm, ZTE, Vodafone,
+or other vendor firmware. Stock updaters, firmware images, identifiers, and
+device dumps remain subject to their original terms.
 
-* bypass carrier billing;
-* clone device identities;
-* alter IMEI values;
-* interfere with cellular networks;
-* access devices without authorization;
-* distribute proprietary firmware illegally.
+Keep vendor files outside the public repository. Prefer build scripts that
+patch a user-supplied, hash-verified stock image locally instead of committing
+vendor-derived binaries.
 
-Cellular transmission must continue to comply with local radio and telecommunications laws.
-
----
+Qualcomm, ZTE, Vodafone, Hynix, ARM, and other names are trademarks of their
+respective owners. Shadow-MSM is an independent research project and is not
+affiliated with or endorsed by those companies.
 
 ## Contributing
 
-Contributions are welcome, especially in these areas:
+Contributions are welcome, especially:
 
-* MSM6290 register identification
-* watchdog reverse engineering
-* timer and interrupt-controller analysis
-* UART and USB research
-* PMIC and LED control
-* microSD interface tracing
-* NAND partition analysis
-* ARM926 Linux bring-up
-* Device Tree development
-* bootloader development
-* documentation of related MSM6246, MSM6275, MSM6280, and MSM6290 devices
+- confirmed MSM6246/MSM6275/MSM6280/MSM6290 register information;
+- UART pin-mux and test-pad identification;
+- timer, interrupt-controller, clock, GPIO, and USB documentation;
+- reproducible logs from closely related devices;
+- small ARMv5-compatible Linux drivers;
+- review of cache, MMU, and kernel-handoff code.
 
-Useful contribution material includes:
+Please preserve the RAM-first default, document the exact hardware and firmware
+revision used, include hashes and target logs, and clearly label anything that
+has not been tested on physical hardware.
 
-* annotated disassembly;
-* hardware photographs;
-* verified register traces;
-* USB captures;
-* non-destructive diagnostic results;
-* logic-analyzer captures;
-* reproducible build instructions.
+## License
 
-Clearly mark all guessed or unverified information.
+The original Shadow-MSM source code and documentation are licensed under the
+**GNU General Public License version 3 only** (`GPL-3.0-only`).
 
----
+Add this identifier to new source files:
 
-## Project status
-
-Shadow-MSM is highly experimental.
-
-| Area                            | Status      |
-| ------------------------------- | ----------- |
-| Exact firmware recovered        | Working     |
-| Firmware resource extraction    | Working     |
-| Qualcomm EFS extraction         | Working     |
-| NAND geometry identified        | Working     |
-| Download mode access            | Working     |
-| Legacy HDLC framing             | Working     |
-| RAM upload                      | Working     |
-| OEM ARMPRG execution            | Working     |
-| Arbitrary ARM payload execution | Working     |
-| Watchdog control                | In progress |
-| RGB LED control                 | In progress |
-| Custom monitor protocol         | In progress |
-| Stage-1 bootloader              | In progress |
-| RAM detection                   | Planned     |
-| UART console                    | Planned     |
-| Linux decompressor entry        | Planned     |
-| Linux timer and IRQ support     | Planned     |
-| BusyBox shell                   | Planned     |
-| microSD support                 | Planned     |
-| NAND Linux support              | Planned     |
-| Automatic standalone boot       | Planned     |
-
----
-
-## Why “Shadow-MSM”?
-
-The Qualcomm MSM6290 platform is mostly undocumented, hidden beneath proprietary bootloaders and modem firmware.
-
-Shadow-MSM is an attempt to reconstruct enough of that hidden platform to run open software on it.
-
-The hardware was always a computer.
-
-We are simply giving it a bootloader.
-
+```text
+SPDX-License-Identifier: GPL-3.0-only
 ```
+
+The GPL does not apply to third-party firmware, drivers, trademarks, or dumps
+merely used with the project. See the
+[GNU GPL version 3](https://www.gnu.org/licenses/gpl-3.0.html) for the complete
+license terms.
