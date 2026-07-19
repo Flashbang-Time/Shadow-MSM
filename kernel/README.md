@@ -27,6 +27,9 @@ single patch in `patches/`, merges `k3765_probe.config` over
 `arm-linux-gnueabi-` toolchain, compiles the probe DTB, and verifies all RAM
 bounds and image headers.
 
+Every change under `kernel/` triggers the same clean build; it can also be
+started manually from the repository's Actions page.
+
 To perform the same build on a Linux host:
 
 ```bash
