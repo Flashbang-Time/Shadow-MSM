@@ -36,7 +36,7 @@ The framework is divided into two primary domains to ensure modular development:
 
 ## License
 
-Shadow-MSM is licensed under the **GNU General Public License v3.0 (GPLv3)**. This ensures that the framework and all derivative works remain free and open for the community to explore, audit, and improve.
+Shadow-MSM is licensed under the **GNU General Public License v3.0 (GPLv3)**. 
 
 See the `LICENSE` file for more information.
 
