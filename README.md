@@ -223,6 +223,14 @@ entry registers, and returns `DRY1` without jumping.
 The complete commands, CRCs, and expected output are documented in
 [`outputs/BL1_0.2_DRYRUN_README.md`](outputs/BL1_0.2_DRYRUN_README.md).
 
+## First Linux probe build
+
+The [`kernel/`](kernel/) tree contains a reproducible Linux v6.1 ARM926 probe
+build. It adds pre-MMU trace milestones for the K3765-Z, compiles a bounded
+zImage and DTB in GitHub Actions, and rejects any image that would overlap the
+resident stage-0 runtime. This probe is intended to locate the first failing
+Linux bring-up boundary; it is not yet a complete, usable kernel port.
+
 SHA-256 values for the redistributable generated artifacts are recorded in
 [`CHECKSUMS.sha256`](CHECKSUMS.sha256).
 
