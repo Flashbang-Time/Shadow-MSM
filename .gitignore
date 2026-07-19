@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local captures, logs, and private device data
+*.log
+*.pcap
+*.pcapng
+*.qcn
+dumps/
+private/
+
+# Vendor firmware must be supplied locally and is not redistributable here
+firmware/*
+!firmware/README.md
+*.mbn
+
+# Patched images derived from the user-supplied OEM ARM programmer
+outputs/armprg_*.bin
+outputs/armprg_*.disasm.txt
+
+# Editor and operating-system noise
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

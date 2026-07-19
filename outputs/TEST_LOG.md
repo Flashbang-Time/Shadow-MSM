@@ -1,0 +1,443 @@
+# K3765-Z RAM-only test log
+
+All tests in this log use the legacy PBL RAM-write command (`0x0F`) and execute
+command (`0x05`). No NAND erase, program, or write command was issued.
+
+## 2026-07-19 — watchdog candidate `0x80004038`
+
+- Downloader interface: `COM35`
+- Payload: `k3765_watchdog_pet.bin`
+- Payload size: 32 bytes
+- SHA-256: `ce9faf98d10605d9fe6ab6c9a3f950ca2fb1f4e11443aa2fe860c3b900624261`
+- Load/entry address: `0x00800000`
+- Intended operation: repeatedly write `1` to `0x80004038`
+
+Uploader result:
+
+```text
+Opening \\.\COM35 at 115200 8N1
+Uploaded 32/32 bytes (100.00%)
+Executing at 0x00800000...
+Execute ACK received. USB disconnect is expected now.
+```
+
+Observed result:
+
+```text
+The device had already re-enumerated in normal mode as COM26/COM30/COM27
+by the first poll. It remained in normal mode for the full 30-second poll.
+```
+
+Conclusion: **failed**. `0x80004038` is not a working watchdog-reset address
+in the PBL execution context. Do not reuse this payload.
+
+## 2026-07-19 - watchdog candidate `0xC0100038`
+
+- Downloader interface: `COM36`
+- Payload: `k3765_watchdog_pet_phys.bin`
+- Payload size: 32 bytes
+- SHA-256: `49124951ae049ce5aa4872966f2266e5a1f9481ed8045892d255ed4da01ff000`
+- Load/entry address: `0x00800000`
+- Intended operation: repeatedly write `1` to `0xC0100038`
+
+Uploader result:
+
+```text
+Uploaded 32/32 bytes (100.00%)
+Executing at 0x00800000...
+Execute ACK received.
+```
+
+Observed result:
+
+```text
+The device re-enumerated in normal mode as COM26/COM30/COM27.
+```
+
+Conclusion: **failed**. Do not reuse this payload.
+
+## 2026-07-19 - stock-runtime diagnostic probe v1
+
+- Downloader interface: `COM37`
+- Image: `armprg_stage0_probe.bin`
+- Image size: 105,968 bytes
+- SHA-256: `91b8b5b8d23293def30f20fe030d2c23d83c942402ca7b1b6cadf71f4467cc34`
+- Modification: appended a 40-byte diagnostic callback and redirected command
+  table slot `0x1C`
+
+Uploader result:
+
+```text
+Uploaded 105,968/105,968 bytes (100.00%)
+Executing OEM ARMPRG from 0x00800000...
+GO response: 02
+```
+
+Probe result:
+
+```text
+TX: 7e 1c 95 2a 7e
+RX: 0e 49 6e 76 61 6c 69 64 20 43 6f 6d 6d 61 6e 64 0a
+TEXT: .Invalid Command.
+```
+
+Conclusion: the stock runtime stayed responsive, but its pre-initialization gate
+allows only command `0x01`, so slot `0x1C` was never dispatched.
+
+## Prepared - stock-runtime diagnostic probe v2
+
+- Image: `armprg_stage0_probe_v2.bin`
+- Image size: 105,968 bytes
+- SHA-256: `b95e8e09f021737049b3e3aa09030d581be6bf65b6a2d7f68f1f2a8a14b7e8e2`
+- Modification: redirect the permitted pre-initialization command `0x01` to
+  the appended `STAGE0_OK` callback
+- Status: statically verified; waiting for a fresh PBL session
+
+## 2026-07-19 - same-size diagnostic probe v3
+
+- Downloader interface: `COM39`
+- Image: `armprg_stage0_probe_v3.bin`
+- Image size: 105,928 bytes
+- SHA-256: `5fd52898e29f554f521362eaa69cceb3d61424818cf7c08a6aeb15e06a45db13`
+
+Uploader result:
+
+```text
+Uploaded 105,928/105,928 bytes (100.00%)
+Executing OEM ARMPRG from 0x00800000...
+GO response: 02
+```
+
+Immediate probe:
+
+```text
+TX: 7e 1c 95 2a 7e
+RX: 0e 53 54 41 47 45 30 5f 4f 4b 0a
+TEXT: .STAGE0_OK.
+```
+
+Ten-second repeat probe:
+
+```text
+TX: 7e 1c 95 2a 7e
+RX: 0e 53 54 41 47 45 30 5f 4f 4b 0a
+TEXT: .STAGE0_OK.
+```
+
+Conclusion: **success**. The modified same-size RAM image remains responsive,
+and the stock ARMPRG runtime provides a stable watchdog-safe execution shell.
+
+## 2026-07-19 - stock-runtime diagnostic probe v2
+
+- Downloader interface: `COM38`
+- Image: `armprg_stage0_probe_v2.bin`
+- Image size: 105,968 bytes
+- SHA-256: `b95e8e09f021737049b3e3aa09030d581be6bf65b6a2d7f68f1f2a8a14b7e8e2`
+
+Uploader result:
+
+```text
+Uploaded 105,968/105,968 bytes (100.00%)
+Executing OEM ARMPRG from 0x00800000...
+GO response: 02
+```
+
+Probe result:
+
+```text
+TX: 7e 01 f1 e1 7e
+RX: timeout
+```
+
+Conclusion: **failed**. The appended callback begins at the stock image's
+original end/BSS boundary and is cleared during ARMPRG startup. The command
+reaches that cleared area and stalls. Do not reuse v2.
+
+## Prepared - same-size diagnostic probe v3
+
+- Image: `armprg_stage0_probe_v3.bin`
+- Image size: 105,928 bytes, identical to stock
+- SHA-256: `5fd52898e29f554f521362eaa69cceb3d61424818cf7c08a6aeb15e06a45db13`
+- Modification: replaces only the existing in-image `Invalid Command` text
+  with `STAGE0_OK`; no code is appended
+- Status: statically verified; waiting for a fresh PBL session
+
+## Prepared - same-size PMIC LED control runtime
+
+- Image: `armprg_pmic_led_control.bin`
+- Image size: 105,928 bytes, identical to stock
+- SHA-256: `4aa7def32d962d83f41832ae258fca8cb6c5ad51296fe742331437b11ead0ff1`
+- Modification: replaces the stock invalid-command handler in place
+- Candidate LED API: OEMSBL `0x00042B78`, which accepts channel `0/1` and
+  intensity `0..15`, then performs masked writes to PMIC register `0x48`
+- Host modes: `off`, `ch0`, `ch1`, `both`
+- Status: executed successfully
+
+## 2026-07-19 - PMIC LED control test
+
+- Downloader interface: `COM40`
+- Image: `armprg_pmic_led_control.bin`
+- Image size: 105,928 bytes
+- SHA-256: `4aa7def32d962d83f41832ae258fca8cb6c5ad51296fe742331437b11ead0ff1`
+
+Uploader result:
+
+```text
+Uploaded 105,928/105,928 bytes (100.00%)
+Executing OEM ARMPRG from 0x00800000...
+GO response: 02
+```
+
+Every control command returned:
+
+```text
+RX: 0e 4c 45 44 5f 4f 4b 0a
+TEXT: .LED_OK.
+```
+
+Observed channel map:
+
+```text
+off   -> LED off
+ch0   -> green
+ch1   -> blue
+both  -> cyan
+```
+
+The final command set both channels off and returned `LED_OK`.
+
+Conclusion: **success**. OEMSBL `0x00042B78` is the working two-channel LED
+intensity routine on this K3765-Z. Channel 0 is green, channel 1 is blue, and
+intensity `15` is maximum. ARMPRG remains responsive around each call.
+
+## Prepared - RGB/MPP LED control runtime
+
+- Image: `armprg_rgb_control.bin`
+- Image size: 105,928 bytes, identical to stock
+- SHA-256: `b77fd6010fc250bec210cd15e7c77d8c19beb1f391540ab5287f317d81b77c8c`
+- Replacement handler: 124 bytes at `0x00810DBC..0x00810E37`
+- Verification: 122 bytes differ from stock, all confined to the replacement
+  handler and diagnostic response string
+- Output mask:
+  - bit 0: PMIC LED channel 0 (observed green)
+  - bit 1: PMIC LED channel 1 (observed blue)
+  - bit 2: PMIC MPP current sink 1 (red candidate)
+  - bit 3: PMIC MPP current sink 3 (red candidate)
+- MPP API: OEMSBL `0x0003ED0C`, current-level enum `2`, output switch `0/1`
+- Host controller: `k3765_rgb_control.py`
+- Continuous modes: `cycle1` and `cycle3`; Ctrl+C sends output mask zero
+- Status: statically verified; waiting for a fresh PBL download-mode session
+
+The callback references only the two established PMIC LED functions and the
+stock diagnostic reply function. No NAND operation is issued by the host
+controller or replacement handler.
+
+## 2026-07-19 - red-channel identification and continuous RGB cycle
+
+- Downloader interface: `COM41`
+- PBL RAM-write probe response: `02`
+- Runtime upload: 105,928/105,928 bytes
+- Execute response: `02`
+- Runtime interface after USB reset: `COM41`
+- New handler response: `RGB_OK`
+
+Observed MPP map:
+
+```text
+MPP current sink 1 -> red
+```
+
+Continuous host-paced sequence:
+
+```text
+red     mask 0x04
+yellow  mask 0x05
+green   mask 0x01
+cyan    mask 0x03
+blue    mask 0x02
+magenta mask 0x06
+```
+
+- Period: 0.55 seconds per color
+- Host process: `python.exe`, PID `20952`
+- Status at launch verification: running; repeated `RGB_OK` acknowledgement for
+  every color step
+- Stop behavior: Ctrl+C in the visible cycle console sends mask `0x00`
+
+Conclusion: **success**. The complete RGB LED mapping is red = MPP current sink
+1, green = PMIC LED channel 0, and blue = PMIC LED channel 1. The cycle is
+running through the initialized ARMPRG runtime and remains RAM-only.
+
+## Prepared - stage-0 monitor with boot logs and system information
+
+- Monitor image: `armprg_stage0_monitor.bin`
+- Image size: 105,928 bytes, identical to stock
+- SHA-256: `2b1fbf1c8e13ae3b8038ba87ba797c27099118509aae78544c46625737f53f9f`
+- Stage-0 handler: 500 bytes at `0x00811374..0x00811567`
+- Command `0x1C` table entry redirected to the stage-0 handler
+- Host console: `k3765_stage0_console.py`
+- RAM loader: `k3765_stage0_load.py`
+
+Runtime system-information records:
+
+```text
+MIDR  ARM main ID
+CTR   cache type
+TCMTR tightly coupled memory status
+CPSR  processor mode / interrupt state
+SCTLR MMU, cache, alignment, vector state
+TTBR  translation-table base
+DACR  domain access control
+DFSR  data fault status
+IFSR  instruction fault status
+FAR   fault address
+SP    live ARMPRG handler stack
+```
+
+Additional primitives:
+
+```text
+CRC32  read-only verification inside 0x01000000..0x01FFFFFF
+CALL   aligned ARM call inside 0x01000000..0x01FFFFFF with r0/r1/r2
+```
+
+- Second-stage proof: `k3765_stage2_proof.bin`
+- Load address: `0x01000000`
+- Size: 12 bytes
+- SHA-256: `d0dd40b887c5e5d612484d178967eb34afad303d9bbe0d1af5eb3dc362c11a70`
+- Behavior: returns `(r0 XOR r1) + r2` through `r0`; no peripheral access
+- Status: statically verified; waiting for a fresh PBL session
+
+The ARM926EJ-S CP15 selectors were checked against the ARM DDI 0198E
+technical reference. The monitor and host loader implement no NAND operation.
+## 2026-07-20 01:14 +03:00 — BL1 minimal bootloader milestone
+
+- Normal-mode diagnostic port: `COM26`
+- Direct diagnostic mode switch produced downloader port: `COM44`
+- PBL RAM-write probe: ACK `0x02`
+- Stage-0 monitor loaded at `0x00800000`
+- BL1 loaded at `0x01000000`
+- BL1 artifact:
+  - file: `outputs/k3765_stage2_bootloader.bin`
+  - size: `2,861` bytes
+  - SHA-256: `135a4af42cefc7a86237e9c7d2fa8f15ff3b0df1fabbf00e362439a52098e135`
+  - host CRC32: `0xEFF2DC54`
+  - target CRC32: `0xEFF2DC54` (exact match)
+- BL1 established and used its own stack at `0x01FFF000`.
+- BL1 emitted boot logs through the resident ARMPRG USB diagnostic transport.
+- Runtime values printed by BL1:
+  - MIDR: `0x41069265`
+  - CTR: `0x1D192192`
+  - CPSR: `0x200000D3`
+  - SCTLR: `0x00051078`
+  - TTBR: `0x0006C000`
+  - DACR: `0xFFFFFFF5`
+  - active BL1 SP: `0x01FFEFE0`
+- Entry-argument proof:
+  - `r0=0xA0A0A0A0`
+  - `r1=0xB1B1B1B1`
+  - `r2=0xC2C2C2C2`
+  - all three values were printed exactly.
+- BL1 returned `r0=0x424F4F54` (`BOOT`) to stage-0.
+- A complete stage-0 system query after BL1 returned successfully, proving
+  stack restoration, link-register restoration, USB-console survival, and a
+  clean second-stage return.
+- Logs:
+  - `outputs/diag_dload_switch_bl1.log`
+  - `outputs/bl1_load.log`
+  - `outputs/bl1_boot.log`
+  - `outputs/bl1_post_return_stage0.log`
+- No NAND erase, program, partition-table, or persistent-storage command was sent.
+
+## 2026-07-19 23:01 +03:00 — corrected stage-0 monitor and stage-2 execution proof
+
+- Downloader port: `COM43`
+- PBL 16-byte RAM-write probe: ACK `0x02`
+- Corrected RAM-only monitor:
+  - load address: `0x00800000`
+  - size: `105,928` bytes
+  - SHA-256: `d62987d1bf6039c05b0cbf7e80ee86d47d8d00b5f154a22594c8ab30f9978dd5`
+  - CRC32: `0xE47D7226`
+- Stage-2 proof:
+  - load address: `0x01000000`
+  - size: `12` bytes
+  - SHA-256: `d0dd40b887c5e5d612484d178967eb34afad303d9bbe0d1af5eb3dc362c11a70`
+  - expected/target CRC32: `0x2A152283`
+- PBL acknowledged every RAM chunk and the execute command with `0x02`.
+- Live monitor banner: `K3765-S0-V1`
+- Runtime CPU state:
+  - MIDR: `0x41069265` — ARM926EJ-S r0p5
+  - CTR: `0x1D192192`
+  - TCMTR: `0x00000000`
+  - CPSR: `0x600000D3` — SVC, ARM state, IRQ/FIQ masked
+  - SCTLR: `0x00051078` — MMU off, D-cache off, I-cache on
+  - TTBR: `0x0006C000`
+  - DACR: `0xFFFFFFF5`
+  - DFSR: `0x0000000C`
+  - IFSR: `0x000000D7`
+  - FAR: `0x20000054`
+  - SP: `0x0081DD74`
+- Target-side CRC over `0x01000000..0x0100000B`: `0x2A152283` (exact match)
+- Target-side call at `0x01000000` with
+  `r0=0x11111111`, `r1=0x22222222`, `r2=0x33333333`
+  returned `r0=0x66666666` exactly.
+- A complete system-info query after the call returned the same values, proving
+  that the monitor stayed alive and the USB console remained usable.
+- Logs:
+  - `outputs/stage0_load_corrected.log`
+  - `outputs/stage0_boot_corrected.log`
+  - `outputs/stage0_boot_post_call.log`
+- No NAND erase, program, partition-table, or persistent-storage command was sent.
+
+## 2026-07-19 22:55 +03:00 — direct diagnostic download-mode switch
+
+- Normal-mode diagnostic port: `COM26`
+- Normal USB identity: `VID_19D2&PID_0016`, composite device
+- Sent one Qualcomm diagnostic command: `DIAG_DLOAD_F` (`0x3A`)
+- Source used to verify the command: local `edlclient/Tools/qc_diag.py`
+- The serial handle disconnected while awaiting the reply, as expected during
+  USB re-enumeration.
+- Resulting device: `ZTE WCDMA Technologies MSM`
+- Resulting USB identity: `USB\VID_19D2&PID_0016` without composite interfaces
+- Windows state: unknown device, problem code 28 (driver not bound)
+- No programmer, partition table, erase, program, or NAND-write command was sent.
+- Transcript: `outputs/diag_dload_switch.log`
+
+## 2026-07-20 — BL1 0.1 post-run CRC explanation
+
+- Host/original BL1 0.1 CRC32: `0xEFF2DC54`
+- Target CRC32 after the verified BL1 run: `0x83FFF9DF`
+- BL1's only writable byte range inside its image is the 13-byte hexadecimal
+  formatting buffer at `0x01000B20`.
+- The last value printed was argument 2, `0xC2C2C2C2`.
+- Independently replacing only that buffer with `0xC2C2C2C2\r\n\0` produces
+  CRC32 `0x83FFF9DF`, exactly matching the target.
+- Conclusion: the executable code remained intact; the CRC change is the
+  expected formatter-buffer mutation.
+
+## 2026-07-20 — BL1 0.2 Linux handoff dry-run build
+
+- Status: host-built and statically audited; target test awaits a fresh PBL
+  RAM-only session.
+- BL1 0.2:
+  - address: `0x01000000`
+  - size: `5,677`
+  - SHA-256:
+    `d6906af398b680b309b7f40403f853e4d43bd830c6159e4490b824e9794fc90c`
+  - CRC32 before execution: `0x83FD9148`
+  - predicted CRC32 after a successful dry run: `0x1AFE6067`
+- Header-only zImage parser fixture:
+  - address: `0x01200000`
+  - size: `64`
+  - CRC32: `0x099A07E1`
+- Minimal valid flattened device tree:
+  - address: `0x01F80000`
+  - size: `429`
+  - CRC32: `0xB82041C8`
+  - FDT magic: `0xD00DFEED`
+  - DTB reserve map protects `0x01F80000..0x01F8FFFF`
+- Static ARM instruction audit found no MMIO writes. The only non-stack store
+  is the known hexadecimal formatting-buffer byte store.
+- BL1 validates both headers, prints the future Linux `PC/r0/r1/r2`, and
+  returns `0x44525931` (`DRY1`) without branching to the fixture.
+- No persistent-storage operation is implemented by the bundle loader.

@@ -1,4 +1,4 @@
-# Shadow-MSM REPO IN PROGRESS
+# Shadow-MSM
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![Status: Experimental](https://img.shields.io/badge/status-experimental-orange)
@@ -115,6 +115,11 @@ See [the detailed layout](outputs/K3765_LINUX_RAM_LAYOUT.md).
 ```text
 Shadow-MSM/
 ├── README.md
+├── LICENSE
+├── CHECKSUMS.sha256
+├── requirements.txt
+├── firmware/
+│   └── README.md
 ├── work/
 │   ├── firmware-analysis utilities
 │   └── stage-0 / BL1 image builders
@@ -145,6 +150,26 @@ Install the Python dependencies:
 ```powershell
 py -3.9 -m pip install pyserial capstone keystone-engine
 ```
+
+## Prepare the OEM-derived runtime locally
+
+The repository intentionally does not contain `armprg.bin` or a patched
+stage-0 image. Extract the matching programmer from a legally obtained stock
+updater and place it at:
+
+```text
+firmware/armprg.bin
+```
+
+The builder verifies its size and SHA-256 before making any output. Build the
+RAM-only stage-0 monitor with:
+
+```powershell
+py -3.9 .\work\build_armprg_stage0_monitor.py
+```
+
+This produces the locally ignored `outputs/armprg_stage0_monitor.bin`. See
+[`firmware/README.md`](firmware/README.md) for the accepted source hash.
 
 ## Safe quick start: verified BL1 0.1
 
@@ -197,6 +222,9 @@ jumping.
 
 The complete commands, CRCs, and expected output are documented in
 [`outputs/BL1_0.2_DRYRUN_README.md`](outputs/BL1_0.2_DRYRUN_README.md).
+
+SHA-256 values for the redistributable generated artifacts are recorded in
+[`CHECKSUMS.sha256`](CHECKSUMS.sha256).
 
 ## RGB diagnostic LED
 
