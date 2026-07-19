@@ -1,0 +1,136 @@
+From: Shadow-MSM contributors
+Subject: [PATCH] ARM: add K3765-Z resident-runtime early trace
+
+This experimental out-of-tree patch provides observable zImage decompressor
+and pre-MMU kernel-entry milestones on the ZTE K3765-Z. It calls the
+initialized, RAM-resident ARMPRG diagnostic string routine at physical address
+0x00816cf4. The Shadow-MSM BL1 contract supplies a valid temporary stack and
+keeps the runtime reserved.
+
+This patch is intentionally device-specific and is not suitable for a generic
+ARM kernel.
+
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index c345775..713af98 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -1918,6 +1918,15 @@ config DEBUG_UNCOMPRESS
+ 	  When this option is set, the selected DEBUG_LL output method
+ 	  will be re-used for normal decompressor output on multiplatform
+ 	  kernels.
++
++config SHADOW_MSM_EARLY_TRACE
++	bool "Shadow-MSM early trace through the resident ARMPRG runtime"
++	depends on CPU_ARM926T
++	help
++	  Emit RAM-only K3765-Z decompressor and pre-MMU kernel milestones
++	  through the initialized ARMPRG diagnostic transport at physical
++	  address 0x00816cf4. This is an experimental Shadow-MSM bring-up
++	  option and is not portable to other ARM926 systems.
+ 	  
+ 
+ config UNCOMPRESS_INCLUDE
+diff --git a/arch/arm/boot/compressed/misc.c b/arch/arm/boot/compressed/misc.c
+index abfed1a..19d6598 100644
+--- a/arch/arm/boot/compressed/misc.c
++++ b/arch/arm/boot/compressed/misc.c
+@@ -91,6 +91,17 @@ static void putstr(const char *ptr)
+ {
+ 	char c;
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	/*
++	 * Shadow-MSM enters the zImage while the initialized OEM ARMPRG
++	 * runtime is still resident at 0x00800000. Its bounded diagnostic
++	 * string transmitter provides an observable pre-MMU console without
++	 * touching persistent storage.
++	 */
++	((void (*)(const char *))0x00816cf4UL)(ptr);
++	return;
++#endif
++
+ 	while ((c = *ptr++) != '\0') {
+ 		if (c == '\n')
+ 			putc('\r');
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index 29e2900..c919cd3 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -104,12 +104,22 @@ ENTRY(stext)
+ 	@ ensure svc mode and all interrupts masked
+ 	safe_svcmode_maskall r9
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r0, .Lshadow_msm_entered
++	bl	__shadow_msm_trace
++#endif
++
+ 	mrc	p15, 0, r9, c0, c0		@ get processor id
+ 	bl	__lookup_processor_type		@ r5=procinfo r9=cpuid
+ 	movs	r10, r5				@ invalid processor (r5=0)?
+  THUMB( it	eq )		@ force fixup-able long branch encoding
+ 	beq	__error_p			@ yes, error 'p'
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r0, .Lshadow_msm_cpu_ok
++	bl	__shadow_msm_trace
++#endif
++
+ #ifdef CONFIG_ARM_LPAE
+ 	mrc	p15, 0, r3, c0, c1, 4		@ read ID_MMFR0
+ 	and	r3, r3, #0xf			@ extract VMSA support
+@@ -138,6 +148,11 @@ ENTRY(stext)
+ #endif
+ 	bl	__create_page_tables
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r0, .Lshadow_msm_tables_ok
++	bl	__shadow_msm_trace
++#endif
++
+ 	/*
+ 	 * The following calls CPU specific code in a position independent
+ 	 * manner.  See arch/arm/mm/proc-*.S for details.  r10 = base of
+@@ -169,10 +184,41 @@ ENTRY(stext)
+ 	ldr	r12, [r10, #PROCINFO_INITFUNC]
+ 	add	r12, r12, r10
+ 	ret	r12
+-1:	b	__enable_mmu
++1:
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r0, .Lshadow_msm_mmu_next
++	bl	__shadow_msm_trace
++#endif
++	b	__enable_mmu
+ ENDPROC(stext)
+ 	.ltorg
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++/*
++ * The Shadow-MSM BL1 contract supplies a valid temporary stack at
++ * 0x01fff000. Preserve every general-purpose register around the initialized
++ * OEM diagnostic string routine so these milestones do not alter the normal
++ * ARM kernel entry contract.
++ */
++ENTRY(__shadow_msm_trace)
++	push	{r0-r12, lr}
++	ldr	r3, =0x00816cf4
++	blx	r3
++	pop	{r0-r12, lr}
++	bx	lr
++ENDPROC(__shadow_msm_trace)
++
++.Lshadow_msm_entered:
++	.asciz	"Shadow-MSM: entered decompressed Linux head.S\r\n"
++.Lshadow_msm_cpu_ok:
++	.asciz	"Shadow-MSM: ARM926 processor lookup passed\r\n"
++.Lshadow_msm_tables_ok:
++	.asciz	"Shadow-MSM: initial page tables created\r\n"
++.Lshadow_msm_mmu_next:
++	.asciz	"Shadow-MSM: enabling the Linux MMU next\r\n"
++	.align	2
++#endif
++
+ /*
+  * Setup the initial page tables.  We only setup the barest
+  * amount which are required to get the kernel running, which

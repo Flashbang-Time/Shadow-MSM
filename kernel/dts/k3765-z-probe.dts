@@ -1,0 +1,38 @@
+/dts-v1/;
+
+/*
+ * Preserve the initialized ARMPRG runtime and its working memory.
+ * The first kernel probe only borrows it for pre-MMU trace output.
+ */
+/memreserve/ 0x00800000 0x00100000;
+
+/* Keep the uploaded DTB stable during early bring-up. */
+/memreserve/ 0x01f80000 0x00010000;
+
+/ {
+	compatible = "zte,k3765-z", "qcom,msm6290";
+	model = "ZTE Vodafone K3765-Z (MSM6290)";
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	chosen {
+		bootargs = "loglevel=8 ignore_loglevel initcall_debug";
+	};
+
+	memory@100000 {
+		device_type = "memory";
+		reg = <0x00100000 0x01f00000>;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,arm926ej-s";
+			reg = <0>;
+		};
+	};
+};
