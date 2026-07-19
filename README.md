@@ -1,4 +1,4 @@
-````markdown
+
 # Shadow-MSM
 
 Experimental Linux and custom bootloader bring-up for the **Qualcomm MSM6290**, initially targeting the **ZTE Vodafone K3765-Z** USB modem.
