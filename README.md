@@ -264,12 +264,6 @@ has not been tested on physical hardware.
 The original Shadow-MSM source code and documentation are licensed under the
 **GNU General Public License version 3 only** (`GPL-3.0-only`).
 
-Add this identifier to new source files:
-
-```text
-SPDX-License-Identifier: GPL-3.0-only
-```
-
 The GPL does not apply to third-party firmware, drivers, trademarks, or dumps
 merely used with the project. See the
 [GNU GPL version 3](https://www.gnu.org/licenses/gpl-3.0.html) for the complete
