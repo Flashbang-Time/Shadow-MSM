@@ -441,3 +441,42 @@ technical reference. The monitor and host loader implement no NAND operation.
 - BL1 validates both headers, prints the future Linux `PC/r0/r1/r2`, and
   returns `0x44525931` (`DRY1`) without branching to the fixture.
 - No persistent-storage operation is implemented by the bundle loader.
+
+## 2026-07-20 — BL1 0.2 target verification
+
+- Normal stock runtime reached network registration before the test.
+- Normal diagnostic port: `COM26`
+- Sent only `DIAG_DLOAD_F` (`0x3A`) to enter the legacy downloader.
+- Downloader/stage-0 port: `COM45`
+- RAM bundle:
+  - stage-0 monitor at `0x00800000`
+  - BL1 0.2 at `0x01000000`
+  - 64-byte header-only zImage fixture at `0x01200000`
+  - 429-byte minimal DTB at `0x01F80000`
+- Target-side CRC32 results before the call:
+  - BL1 0.2: `0x83FD9148`
+  - zImage fixture: `0x099A07E1`
+  - DTB: `0xB82041C8`
+- BL1 header validation:
+  - zImage magic: `0x016F2818`
+  - zImage header start: `0x00108000`
+  - zImage header end: `0x00108040`
+  - DTB in-memory magic: `0xEDFE0DD0`
+  - DTB total size: `0x000001AD`
+- Planned Linux entry:
+  - PC: `0x01200000`
+  - r0: `0x00000000`
+  - r1: `0xFFFFFFFF`
+  - r2: `0x01F80000`
+- BL1 printed `Validation PASS` and returned `0x44525931` (`DRY1`) without
+  branching to the fixture.
+- Post-run BL1 CRC32: `0x1AFE6067`, exactly matching the predicted formatting
+  buffer mutation.
+- A complete stage-0 system query succeeded after BL1 returned.
+- Logs:
+  - `outputs/diag_dload_switch_bl1_0.2.log`
+  - `outputs/bl1_0.2_bundle_load.log`
+  - `outputs/bl1_0.2_dryrun.log`
+  - `outputs/bl1_0.2_post_return_stage0.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

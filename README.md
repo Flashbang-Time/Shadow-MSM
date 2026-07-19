@@ -16,8 +16,8 @@ and a small second-stage bootloader—without modifying NAND.
 > [!IMPORTANT]
 > Linux is **not booting yet**. Custom ARM code, the stage-0 monitor, RGB LED
 > control, runtime hardware identification, and BL1 0.1 are verified on real
-> hardware. BL1 0.2's non-jumping Linux handoff dry run is built and statically
-> checked, but still awaits its target-side test.
+> hardware. BL1 0.2's non-jumping Linux handoff dry run is also verified on
+> the physical target. A real Linux kernel has not yet been handed off.
 
 ## Why this exists
 
@@ -67,7 +67,7 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Identified and controlled all RGB LED channels
 - [x] Built and hardware-tested BL1 0.1 with boot logs and system information
 - [x] Built BL1 0.2 Linux-handoff validation and a minimal device tree
-- [ ] Verify BL1 0.2 dry run on the target
+- [x] Verified BL1 0.2 dry run on the target
 - [ ] Establish an independent post-handoff UART or USB console
 - [ ] Add MSM6290 timer and interrupt-controller support
 - [ ] Reach the first Linux decompressor/kernel banner
@@ -216,9 +216,9 @@ last printed value, `0xC2C2C2C2`; the executable code is unchanged.
 
 ## Linux-handoff dry run
 
-BL1 0.2 validates a header-only zImage fixture and a minimal flattened device
-tree, prints the planned Linux entry registers, and returns `DRY1` without
-jumping.
+BL1 0.2 has been verified on the physical K3765-Z. It validates a header-only
+zImage fixture and a minimal flattened device tree, prints the planned Linux
+entry registers, and returns `DRY1` without jumping.
 
 The complete commands, CRCs, and expected output are documented in
 [`outputs/BL1_0.2_DRYRUN_README.md`](outputs/BL1_0.2_DRYRUN_README.md).
