@@ -231,11 +231,44 @@ def crc_query(port, address, length):
     return int(command(port, 0x0C, args), 16)
 
 
+def stage2_request(port, address, r0, r1, r2):
+    if address & 3 or not SAFE_RAM_START <= address < SAFE_RAM_END:
+        raise ValueError("stage-2 PC must be aligned inside the safe RAM window")
+    args = struct.pack("<IIII", address, r0, r1, r2)
+    return frame(bytes((0x1C, 0x0D)) + args)
+
+
 def call_stage2(port, address, r0, r1, r2, on_message=None):
     if address & 3 or not SAFE_RAM_START <= address < SAFE_RAM_END:
         raise ValueError("stage-2 PC must be aligned inside the safe RAM window")
     args = struct.pack("<IIII", address, r0, r1, r2)
     return int(command(port, 0x0D, args, on_message=on_message), 16)
+
+
+def follow_linux(port, address, r0, r1, r2, on_message, idle_timeout):
+    request = stage2_request(port, address, r0, r1, r2)
+    port.reset_input_buffer()
+    port.write(request)
+    port.flush()
+    idle_deadline = time.monotonic() + idle_timeout
+    while time.monotonic() < idle_deadline:
+        try:
+            payload = read_frame(
+                port,
+                timeout=min(1.0, idle_deadline - time.monotonic()),
+            )
+        except (OSError, serial.SerialException) as error:
+            on_message(f"Transport disconnected after handoff: {error}")
+            return None
+        if payload is None:
+            continue
+        text = extract_text(payload)
+        on_message(text)
+        idle_deadline = time.monotonic() + idle_timeout
+        if re.fullmatch(r"[0-9A-Fa-f]{8}", text):
+            return int(text, 16)
+    on_message(f"No new target frame for {idle_timeout:g} seconds.")
+    return None
 
 
 def parse_int(text):
@@ -246,7 +279,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("port", help="ARMPRG monitor port, for example COM41")
     parser.add_argument(
-        "action", choices=("info", "crc", "call", "boot"), nargs="?", default="info"
+        "action",
+        choices=("info", "crc", "call", "boot", "linux"),
+        nargs="?",
+        default="info",
     )
     parser.add_argument("values", nargs="*")
     parser.add_argument(
@@ -258,6 +294,12 @@ def main():
         "--skip-banner",
         action="store_true",
         help="skip the mutable banner buffer after it was verified once",
+    )
+    parser.add_argument(
+        "--idle-timeout",
+        type=float,
+        default=20.0,
+        help="seconds without a target frame before linux mode stops",
     )
     args = parser.parse_args()
 
@@ -277,7 +319,7 @@ def main():
         values = list(map(parse_int, args.values))
         while len(values) < 4:
             values.append(0)
-        if args.action == "boot":
+        if args.action in ("boot", "linux"):
             with Path(args.log).open("w", encoding="utf-8", newline="\n") as log:
                 def emit_stage2(text):
                     print(text, end="" if text.endswith("\n") else "\n")
@@ -286,8 +328,22 @@ def main():
                         log.write("\n")
                     log.flush()
 
-                result = call_stage2(port, *values, on_message=emit_stage2)
-                emit_stage2(f"RETURN R0: 0x{result:08X}")
+                if args.action == "linux":
+                    result = follow_linux(
+                        port,
+                        *values,
+                        on_message=emit_stage2,
+                        idle_timeout=args.idle_timeout,
+                    )
+                    if result is not None:
+                        emit_stage2(f"UNEXPECTED RETURN R0: 0x{result:08X}")
+                else:
+                    result = call_stage2(
+                        port,
+                        *values,
+                        on_message=emit_stage2,
+                    )
+                    emit_stage2(f"RETURN R0: 0x{result:08X}")
             return 0
         result = call_stage2(port, *values)
         print(f"RETURN R0: 0x{result:08X}")
