@@ -544,3 +544,55 @@ technical reference. The monitor and host loader implement no NAND operation.
 - Preserved transcript: `outputs/bl1_0.4_direct_image_boot_20260720.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-20 — BL1 0.4 fixed-stack ARM926/MMU-boundary trace
+
+- GitHub Actions run
+  [`29761806131`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29761806131)
+  produced the fixed-stack probe from commit `a63dbb1`.
+- Linux `Image`:
+  - load/entry: `0x00208000`
+  - size: `3,569,520`
+  - SHA-256:
+    `ef9d742b1d3784682f9196bd3d3eff30876ec70a039f6a8260096e893bd1ded2`
+  - CRC32: `0x4E1D617D`
+- BL1 0.4:
+  - load address: `0x01000000`
+  - size: `5,933`
+  - SHA-256:
+    `ac610441c17e96c63c4f3ab0a2014d0119126d365af62c3b086fd6a1f9f22e8d`
+  - target CRC32: `0x507AFC91`
+- DTB:
+  - load address: `0x01F80000`
+  - size: `549`
+  - target CRC32: `0x5D395650`
+- Stage-0 identified the target as ARM926EJ-S variant 0 revision 5 with
+  `SCTLR=0x00051078`, MMU off, D-cache off, I-cache on, and IRQ/FIQ masked.
+- BL1 validated the exact Image size, all 17 sparse Image fingerprints, DTB
+  magic and size, and the explicit `IMG1` marker.
+- Target output reached:
+
+  ```text
+  Shadow-MSM: entered decompressed Linux head.S
+  Shadow-MSM: ARM926 processor lookup passed
+  Shadow-MSM: initial page tables created
+  Shadow-MSM: calling ARM926 processor setup
+  Shadow-MSM: entered ARM926 setup
+  Shadow-MSM: ARM926 cache invalidate returned
+  Shadow-MSM: ARM926 TLB invalidate returned
+  Shadow-MSM: ARM926 control word ready
+  Shadow-MSM: ARM926 setup returned; enabling MMU next
+  ```
+
+- The raw COM transport disconnected at the MMU handoff. The normal composite
+  ports (`COM26`, `COM27`, and `COM30`) subsequently returned, indicating a
+  target reset after the MMU boundary.
+- A host attempt to CRC the lower Image window was rejected by stage-0 with
+  `BAD00001`; no read or write occurred. BL1's embedded fingerprints remain
+  the target-side Image validation mechanism for this memory layout.
+- Preserved logs:
+  - `outputs/direct_image_bundle_load_fixedtrace_20260720.log`
+  - `outputs/stage0_info_fixedtrace_20260720.log`
+  - `outputs/bl1_0.4_fixedtrace_boot_20260720.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

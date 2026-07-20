@@ -1,0 +1,27 @@
+K3765-Z RAM stage-0 boot log
+Host time: 2026-07-20T20:16:40
+Transport: legacy Qualcomm HDLC over USB serial
+Persistence: RAM only; no NAND operation
+
+Monitor: K3765-S0-V1
+MIDR : 0x41069265
+CTR  : 0x1D192192
+TCMTR: 0x00000000
+CPSR : 0x600000D3
+SCTLR: 0x00051078
+TTBR : 0x0006C000
+DACR : 0xFFFFFFF5
+DFSR : 0x0000000C
+IFSR : 0x000000D7
+FAR  : 0x60000008
+SP   : 0x0081DD74
+
+CPU   : ARM ARM926EJ-S, architecture field 6, variant 0, revision 5
+CPSR  : mode=SVC, ARM-state=ARM, IRQ=masked, FIQ=masked
+SCTLR : MMU=off, alignment=off, D-cache=off, write-buffer=on, I-cache=on, high-vectors=off
+Board : ZTE/Vodafone K3765-Z
+SoC   : Qualcomm MSM6290 (MSM6246-family downloader)
+PMIC  : Qualcomm PM6658-family; RGB map R=MPP1 G=LED0 B=LED1
+NAND  : HYNIX_HSACS0PL0MCR OEM profile, 128 MiB + OOB
+RAM   : firmware physical span reaches 0x01FAC000; stage-0 safe window is 0x01000000..0x01FFFFFF
+OEMSBL: 00.02.00.04 / KPVDFP673A1M256
