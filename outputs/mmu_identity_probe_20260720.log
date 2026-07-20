@@ -1,0 +1,24 @@
+K3765-Z ARM926 identity-MMU probe
+Mode  : temporary 4 GiB non-cacheable 1:1 section map
+Flash : untouched; RAM execution only
+L1 table: 0x01100000..0x01103FFF
+Original CPU state
+SCTLR: 
+0x00051078
+TTBR : 
+0x0006C000
+DACR : 
+0xFFFFFFF5
+Identity table built; installing TTBR and DACR
+Enabling MMU now
+MMU ENABLED: translated diagnostic call succeeded
+Translated CPU state
+SCTLR: 
+0x00051079
+TTBR : 
+0x01100000
+DACR : 
+0x00000003
+Restoring original MMU control state
+MMU disabled and original TTBR/DACR restored; returning MMU1
+RETURN R0: 0x4D4D5531

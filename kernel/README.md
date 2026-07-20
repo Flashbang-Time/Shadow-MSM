@@ -81,7 +81,14 @@ Shadow-MSM: ARM926 cache invalidate returned
 Shadow-MSM: ARM926 TLB invalidate returned
 Shadow-MSM: ARM926 control word ready
 Shadow-MSM: ARM926 setup returned; enabling MMU next
+Shadow-MSM: MMU enabled; identity execution continues
 ```
+
+For this diagnostic build only, the initial L1 table keeps a temporary
+non-cacheable 1:1 section map using the ARM926 procinfo IO flags. Linux's
+normal high virtual kernel mapping is installed over it, and `paging_init()`
+later replaces the early table. This keeps the resident trace transport
+reachable across the first translation boundary.
 
 No flash driver, NAND command, partition operation, or persistent-storage
 write is part of this build path.

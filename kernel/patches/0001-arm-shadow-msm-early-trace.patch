@@ -2,11 +2,12 @@ From: Shadow-MSM contributors
 Subject: [PATCH] ARM: add K3765-Z resident-runtime early trace
 
 This experimental out-of-tree patch provides observable zImage decompressor
-and pre-MMU kernel-entry milestones on the ZTE K3765-Z. It calls the
-initialized, RAM-resident ARMPRG diagnostic string routine at physical address
-0x00816cf4. A dedicated trace stack lives at 0x008ff000 because Linux
-repurposes r13 before the ARM926 setup callback. The device tree keeps the
-entire monitor window reserved.
+and early kernel-entry milestones on the ZTE K3765-Z. It calls the initialized,
+RAM-resident ARMPRG diagnostic string routine at physical address 0x00816cf4.
+A dedicated trace stack lives at 0x008ff000 because Linux repurposes r13
+before the ARM926 setup callback. A temporary non-cacheable identity map keeps
+the resident runtime reachable across the first MMU transition. The device
+tree keeps the entire monitor window reserved.
 
 This patch is intentionally device-specific and is not suitable for a generic
 ARM kernel.
@@ -152,6 +153,46 @@ index 29e2900..c919cd3 100644
  /*
   * Setup the initial page tables.  We only setup the barest
   * amount which are required to get the kernel running, which
+@@ -228,6 +228,18 @@ __create_page_tables:
+ #endif
+ #endif
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	ldr	r7, [r10, #PROCINFO_IO_MMUFLAGS]
++	mov	r0, r4
++	mov	r5, #0
++	mov	r6, #0x1000
++2:	orr	r3, r7, r5, lsl #SECTION_SHIFT
++	str	r3, [r0], #1 << PMD_ENTRY_ORDER
++	add	r5, r5, #1
++	subs	r6, r6, #1
++	bne	2b
++#endif
++
+ 	ldr	r7, [r10, #PROCINFO_MM_MMUFLAGS] @ mm_mmuflags
+ 
+ 	/*
+@@ -503,11 +515,20 @@ ENTRY(__turn_mmu_on)
+ 	mcr	p15, 0, r0, c1, c0, 0		@ write control reg
+ 	mrc	p15, 0, r3, c0, c0, 0		@ read id reg
+ 	instr_sync
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r11, .Lshadow_msm_mmu_enabled
++	bl	__shadow_msm_trace
++#endif
+ 	mov	r3, r3
+ 	mov	r3, r13
+ 	ret	r3
+ __turn_mmu_on_end:
+ ENDPROC(__turn_mmu_on)
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++.Lshadow_msm_mmu_enabled:
++	.asciz	"Shadow-MSM: MMU enabled; identity execution continues\r\n"
++	.align	2
++#endif
+ 	.popsection
+ 
+ 
 diff --git a/arch/arm/mm/proc-arm926.S b/arch/arm/mm/proc-arm926.S
 index 134426e..b5aaf97 100644
 --- a/arch/arm/mm/proc-arm926.S

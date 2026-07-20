@@ -481,6 +481,53 @@ technical reference. The monitor and host loader implement no NAND operation.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
 
+## 2026-07-20 — Returning ARM926 identity-MMU probe
+
+- Raw downloader/stage-0 port: `COM50`
+- RAM bundle:
+  - stage-0 monitor at `0x00800000`
+  - identity-MMU probe at `0x01000000`
+- Identity-MMU probe:
+  - size: `5,933`
+  - SHA-256:
+    `907079d9190a3fb0d38f84ac0d8bb6994a8c14319ae903bd470939387d86d620`
+  - host and target CRC32: `0x378F1FEA`
+  - temporary L1 table: `0x01100000..0x01103FFF`
+  - section flags: `0x00000C12`, matching the verified ARM926 procinfo
+    non-cacheable mapping flags
+- Every PBL RAM-write chunk and the stage-0 execute request returned ACK
+  `0x02`.
+- Original CPU control state:
+
+  ```text
+  SCTLR: 0x00051078
+  TTBR : 0x0006C000
+  DACR : 0xFFFFFFF5
+  ```
+
+- The target built a complete non-cacheable 1:1 section map, installed it,
+  enabled the ARM926 MMU, and successfully called the resident diagnostic
+  runtime while translation was active:
+
+  ```text
+  MMU ENABLED: translated diagnostic call succeeded
+  SCTLR: 0x00051079
+  TTBR : 0x01100000
+  DACR : 0x00000003
+  ```
+
+- The payload disabled translation, restored the original TTBR and DACR,
+  invalidated the TLB, and returned `0x4D4D5531` (`MMU1`) to stage-0.
+- A complete post-return stage-0 hardware query succeeded and confirmed that
+  `SCTLR`, `TTBR`, and `DACR` exactly matched their pre-test values.
+- Preserved logs:
+  - `outputs/mmu_identity_bundle_load_20260720.log`
+  - `outputs/stage0_info_mmu_probe_20260720.log`
+  - `outputs/mmu_identity_probe_20260720.log`
+  - `outputs/stage0_info_after_mmu_probe_20260720.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
 ## 2026-07-20 — BL1 0.3 zImage target entry
 
 - GitHub Actions run `29728599678` produced the verified Linux v6.1 probe:
