@@ -19,6 +19,8 @@ ESC = 0x7D
 MONITOR_BASE = 0x00800000
 SAFE_EXTRA_START = 0x01000000
 SAFE_RAM_END = 0x02000000
+DIRECT_IMAGE_START = 0x00208000
+DIRECT_IMAGE_END = 0x00600000
 MAX_CHUNK = 0x3F9
 
 
@@ -154,6 +156,15 @@ def parse_image(value):
         ) from error
 
 
+def range_is_allowed(address, length):
+    end = address + length
+    return (
+        DIRECT_IMAGE_START <= address and end <= DIRECT_IMAGE_END
+    ) or (
+        SAFE_EXTRA_START <= address and end <= SAFE_RAM_END
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=(
@@ -182,16 +193,18 @@ def main():
     bundle = [(MONITOR_BASE, args.monitor, monitor)]
     for address, path in args.image:
         data = path.read_bytes()
-        if address < SAFE_EXTRA_START or address + len(data) > SAFE_RAM_END:
+        if not range_is_allowed(address, len(data)):
             raise SystemExit(
-                f"{path} exceeds 0x{SAFE_EXTRA_START:08X}.."
-                f"0x{SAFE_RAM_END - 1:08X}"
+                f"{path} is outside the direct-Image window "
+                f"0x{DIRECT_IMAGE_START:08X}..0x{DIRECT_IMAGE_END - 1:08X} "
+                f"and stage-2 window "
+                f"0x{SAFE_EXTRA_START:08X}..0x{SAFE_RAM_END - 1:08X}"
             )
         bundle.append((address, path, data))
 
     occupied = sorted(
         (address, address + len(data), path)
-        for address, path, data in bundle[1:]
+        for address, path, data in bundle
     )
     for (_, previous_end, previous_path), (
         current_start,

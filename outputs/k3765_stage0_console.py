@@ -231,6 +231,41 @@ def crc_query(port, address, length):
     return int(command(port, 0x0C, args), 16)
 
 
+def verify_file(port, address, path, chunk_size):
+    data = path.read_bytes()
+    if not data:
+        raise ValueError("verification file is empty")
+    if chunk_size <= 0:
+        raise ValueError("chunk size must be positive")
+    if address + len(data) > SAFE_RAM_END:
+        raise ValueError("verification file exceeds the stage-0 safe RAM window")
+
+    print(
+        f"Verifying {path.name}: {len(data):,} bytes at "
+        f"0x{address:08X} in {chunk_size:,}-byte watchdog-safe chunks"
+    )
+    for offset in range(0, len(data), chunk_size):
+        chunk = data[offset:offset + chunk_size]
+        local_crc = binascii.crc32(chunk) & 0xFFFFFFFF
+        target_crc = crc_query(port, address + offset, len(chunk))
+        status = "OK" if target_crc == local_crc else "MISMATCH"
+        print(
+            f"  0x{address + offset:08X}  {len(chunk):6,} bytes  "
+            f"target={target_crc:08X} local={local_crc:08X}  {status}"
+        )
+        if target_crc != local_crc:
+            raise RuntimeError(
+                f"verification failed at SDRAM address "
+                f"0x{address + offset:08X}"
+            )
+
+    full_crc = binascii.crc32(data) & 0xFFFFFFFF
+    print(
+        f"PASS: every chunk matched; local full-image CRC32 "
+        f"is 0x{full_crc:08X}"
+    )
+
+
 def stage2_request(port, address, r0, r1, r2):
     if address & 3 or not SAFE_RAM_START <= address < SAFE_RAM_END:
         raise ValueError("stage-2 PC must be aligned inside the safe RAM window")
@@ -280,7 +315,7 @@ def main():
     parser.add_argument("port", help="ARMPRG monitor port, for example COM41")
     parser.add_argument(
         "action",
-        choices=("info", "crc", "call", "boot", "linux"),
+        choices=("info", "crc", "verify", "call", "boot", "linux"),
         nargs="?",
         default="info",
     )
@@ -301,6 +336,12 @@ def main():
         default=20.0,
         help="seconds without a target frame before linux mode stops",
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=parse_int,
+        default=0x8000,
+        help="target CRC chunk size for verify (default: 0x8000)",
+    )
     args = parser.parse_args()
 
     with open_port(args.port) as port:
@@ -313,6 +354,16 @@ def main():
                 raise SystemExit("crc requires ADDRESS LENGTH")
             value = crc_query(port, *map(parse_int, args.values))
             print(f"CRC32: 0x{value:08X}")
+            return 0
+        if args.action == "verify":
+            if len(args.values) != 2:
+                raise SystemExit("verify requires ADDRESS FILE")
+            verify_file(
+                port,
+                parse_int(args.values[0]),
+                Path(args.values[1]),
+                args.chunk_size,
+            )
             return 0
         if len(args.values) not in (1, 4):
             raise SystemExit(f"{args.action} requires PC [R0 R1 R2]")

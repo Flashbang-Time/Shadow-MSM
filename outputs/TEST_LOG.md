@@ -480,3 +480,67 @@ technical reference. The monitor and host loader implement no NAND operation.
   - `outputs/bl1_0.2_post_return_stage0.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-20 — BL1 0.3 zImage target entry
+
+- GitHub Actions run `29728599678` produced the verified Linux v6.1 probe:
+  - zImage: `1,721,376` bytes, SHA-256
+    `42812837dde444f9af32612d5341e9c39bad53e2ec8c4de232f6754d456761ee`,
+    CRC32 `0x84FA997D`
+  - Image: `3,569,520` bytes, SHA-256
+    `6a67cad42756124f7aa084e1d625c779bb39e1408e3f69648784010b35b10f51`
+  - DTB: `549` bytes, SHA-256
+    `53e5df6453001df89ff73985901bc613bff87ecbd8b8479108de09299a8e42bb`,
+    CRC32 `0x5D395650`
+- A full-image target CRC request exceeded the watchdog interval. The host
+  verifier was changed to request independent `0x8000`-byte CRC windows.
+- All 53 zImage windows matched the host file exactly. The final local
+  full-image CRC remained `0x84FA997D`.
+- BL1 0.3, DTB, and monitor checks passed before handoff.
+- BL1 entered the zImage and the target printed `Uncompressing Linux...`.
+- The zImage decompressor did not complete within the hardware watchdog
+  interval, so the next attempt bypassed it using the uncompressed Image.
+- Preserved transcript: `outputs/bl1_0.3_linux_boot_20260720.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
+## 2026-07-20 — BL1 0.4 direct uncompressed Image handoff
+
+- BL1 0.4:
+  - load address: `0x01000000`
+  - size: `5,933`
+  - SHA-256:
+    `bc9dbf8ef9463cda0679cbe15dbcea01c73af6c75a6f2ddc92183060542a8d83`
+  - CRC32: `0xF0E0ADF7`
+- Verified Linux Image:
+  - load/entry address: `0x00208000`
+  - end address: `0x0056F770`
+  - size: `3,569,520`
+  - CRC32: `0x4ECBFE56`
+- The bounded host loader accepted the direct-Image range only inside
+  `0x00208000..0x005FFFFF`; its original stage-2 window remains
+  `0x01000000..0x01FFFFFF`.
+- Every PBL RAM-write chunk and the monitor execute request returned ACK
+  `0x02`.
+- BL1 checked the exact Image size, 17 sparse Image fingerprints, the DTB
+  magic/size, the explicit `IMG1` arming marker, and the MMU/D-cache entry
+  state.
+- Target output reached:
+
+  ```text
+  JUMPING DIRECTLY TO DECOMPRESSED LINUX IMAGE
+  Shadow-MSM: entered decompressed Linux head.S
+  Shadow-MSM: ARM926 processor lookup passed
+  Shadow-MSM: initial page tables created
+  ```
+
+- The raw diagnostic USB port remained enumerated after the 30-second log
+  timeout. The target did not fall back into stock composite mode during the
+  observation window.
+- Subsequent source review found that the missing fourth trace used `push`
+  after Linux had repurposed `sp` (`r13`) as the future virtual
+  `__mmap_switched` address. The trace hook itself was therefore unsafe at
+  that location; the three observed milestones remain valid.
+- Preserved transcript: `outputs/bl1_0.4_direct_image_boot_20260720.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
