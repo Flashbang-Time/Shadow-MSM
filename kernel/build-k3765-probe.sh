@@ -61,6 +61,16 @@ dtc -I dts -O dtb -o "${artifacts}/k3765-z-probe.dtb" "${dts_file}"
 cp "${kernel_out}/arch/arm/boot/zImage" "${artifacts}/zImage-k3765-probe"
 cp "${kernel_out}/arch/arm/boot/Image" "${artifacts}/Image-k3765-probe"
 cp "${kernel_out}/.config" "${artifacts}/kernel.config"
+cp "${kernel_out}/vmlinux" "${artifacts}/vmlinux-k3765-probe"
+cp "${kernel_out}/System.map" "${artifacts}/System.map-k3765-probe"
+
+arm-linux-gnueabi-objdump -dr \
+	"${kernel_out}/arch/arm/kernel/head.o" \
+	"${kernel_out}/arch/arm/mm/proc-arm926.o" \
+	> "${artifacts}/early-boot.disasm.txt"
+
+arm-linux-gnueabi-nm -n "${kernel_out}/vmlinux" \
+	> "${artifacts}/vmlinux.symbols.txt"
 
 python3 "${repo_root}/kernel/verify_probe.py" \
 	--zimage "${artifacts}/zImage-k3765-probe" \
@@ -68,4 +78,10 @@ python3 "${repo_root}/kernel/verify_probe.py" \
 	--dtb "${artifacts}/k3765-z-probe.dtb" \
 	--report "${artifacts}/ARTIFACTS.txt"
 
-sha256sum "${artifacts}"/* > "${artifacts}/SHA256SUMS"
+find "${artifacts}" \
+	-maxdepth 1 \
+	-type f \
+	! -name SHA256SUMS \
+	-print0 |
+	sort -z |
+	xargs -0 sha256sum > "${artifacts}/SHA256SUMS"

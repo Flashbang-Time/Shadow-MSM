@@ -11,13 +11,17 @@ prove, with visible milestones, that:
 2. the decompressor runs;
 3. execution reaches the decompressed kernel entry;
 4. Linux recognizes the ARM926 processor;
-5. Linux creates its initial page tables; and
-6. execution reaches the MMU-enable boundary.
+5. Linux creates its initial page tables;
+6. the ARM926 cache/TLB/control setup returns; and
+7. execution reaches the MMU-enable boundary.
 
 The early trace patch borrows the initialized RAM-resident ARMPRG diagnostic
 string routine only while the MMU is off. The device tree reserves
 `0x00800000..0x008fffff` so the kernel image and allocator do not overwrite
-that runtime during this experiment.
+that runtime during this experiment. Trace calls use a dedicated physical
+stack at the top of that reservation. This is required because Linux
+repurposes `r13` as the future virtual `__mmap_switched` address immediately
+before calling the ARM926 processor setup function.
 
 The DT deliberately exposes RAM from `0x00200000`, not the observed
 `0x00100000`. Linux v6.1's ARM DT-assisted `AUTO_ZRELADDR` path rounds the
@@ -55,6 +59,10 @@ build/k3765-probe/artifacts/
 ├── Image-k3765-probe
 ├── k3765-z-probe.dtb
 ├── kernel.config
+├── vmlinux-k3765-probe
+├── System.map-k3765-probe
+├── early-boot.disasm.txt
+├── vmlinux.symbols.txt
 ├── ARTIFACTS.txt
 └── SHA256SUMS
 ```
@@ -67,7 +75,12 @@ Uncompressing Linux...
 Shadow-MSM: entered decompressed Linux head.S
 Shadow-MSM: ARM926 processor lookup passed
 Shadow-MSM: initial page tables created
-Shadow-MSM: enabling the Linux MMU next
+Shadow-MSM: calling ARM926 processor setup
+Shadow-MSM: entered ARM926 setup
+Shadow-MSM: ARM926 cache invalidate returned
+Shadow-MSM: ARM926 TLB invalidate returned
+Shadow-MSM: ARM926 control word ready
+Shadow-MSM: ARM926 setup returned; enabling MMU next
 ```
 
 No flash driver, NAND command, partition operation, or persistent-storage

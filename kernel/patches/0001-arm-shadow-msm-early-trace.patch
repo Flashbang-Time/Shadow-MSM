@@ -4,8 +4,9 @@ Subject: [PATCH] ARM: add K3765-Z resident-runtime early trace
 This experimental out-of-tree patch provides observable zImage decompressor
 and pre-MMU kernel-entry milestones on the ZTE K3765-Z. It calls the
 initialized, RAM-resident ARMPRG diagnostic string routine at physical address
-0x00816cf4. The Shadow-MSM BL1 contract supplies a valid temporary stack and
-keeps the runtime reserved.
+0x00816cf4. A dedicated trace stack lives at 0x008ff000 because Linux
+repurposes r13 before the ARM926 setup callback. The device tree keeps the
+entire monitor window reserved.
 
 This patch is intentionally device-specific and is not suitable for a generic
 ARM kernel.
@@ -61,7 +62,7 @@ index 29e2900..c919cd3 100644
  	safe_svcmode_maskall r9
  
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
-+	adr_l	r0, .Lshadow_msm_entered
++	adr_l	r11, .Lshadow_msm_entered
 +	bl	__shadow_msm_trace
 +#endif
 +
@@ -72,33 +73,38 @@ index 29e2900..c919cd3 100644
  	beq	__error_p			@ yes, error 'p'
  
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
-+	adr_l	r0, .Lshadow_msm_cpu_ok
++	adr_l	r11, .Lshadow_msm_cpu_ok
 +	bl	__shadow_msm_trace
 +#endif
 +
  #ifdef CONFIG_ARM_LPAE
  	mrc	p15, 0, r3, c0, c1, 4		@ read ID_MMFR0
  	and	r3, r3, #0xf			@ extract VMSA support
-@@ -138,6 +148,11 @@ ENTRY(stext)
+@@ -138,6 +148,16 @@ ENTRY(stext)
  #endif
  	bl	__create_page_tables
  
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
-+	adr_l	r0, .Lshadow_msm_tables_ok
++	adr_l	r11, .Lshadow_msm_tables_ok
++	bl	__shadow_msm_trace
++#endif
++
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r11, .Lshadow_msm_cpu_setup
 +	bl	__shadow_msm_trace
 +#endif
 +
  	/*
  	 * The following calls CPU specific code in a position independent
  	 * manner.  See arch/arm/mm/proc-*.S for details.  r10 = base of
-@@ -169,10 +184,42 @@ ENTRY(stext)
+@@ -169,10 +189,53 @@ ENTRY(stext)
  	ldr	r12, [r10, #PROCINFO_INITFUNC]
  	add	r12, r12, r10
  	ret	r12
 -1:	b	__enable_mmu
 +1:
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
-+	adr_l	r0, .Lshadow_msm_mmu_next
++	adr_l	r11, .Lshadow_msm_cpu_setup_returned
 +	bl	__shadow_msm_trace
 +#endif
 +	b	__enable_mmu
@@ -107,17 +113,26 @@ index 29e2900..c919cd3 100644
  
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
 +/*
-+ * BL1 supplies a valid entry stack and the zImage decompressor establishes
-+ * its own working stack before entering this image. Preserve every
-+ * general-purpose register around the initialized OEM diagnostic string
-+ * routine so these milestones do not alter the normal ARM kernel entry
-+ * contract.
++ * Linux intentionally repurposes r13 as the future virtual
++ * __mmap_switched address before the processor setup callback. A trace after
++ * that point must not push to the apparent stack. Switch to a dedicated
++ * physical stack inside the monitor's reserved 0x00800000..0x008fffff
++ * window, preserve the Linux entry-contract registers and condition flags,
++ * then restore the original r13. r3 and r11 are scratch at every call site.
 + */
 +ENTRY(__shadow_msm_trace)
++	mov	r3, sp
++	ldr	sp, =0x008ff000
 +	push	{r0-r12, lr}
++	mrs	r12, cpsr
++	push	{r12, lr}
++	mov	r0, r11
 +	ldr	r3, =0x00816cf4
 +	blx	r3
++	pop	{r12, lr}
++	msr	cpsr_f, r12
 +	pop	{r0-r12, lr}
++	mov	sp, r3
 +	bx	lr
 +ENDPROC(__shadow_msm_trace)
 +
@@ -127,11 +142,70 @@ index 29e2900..c919cd3 100644
 +	.asciz	"Shadow-MSM: ARM926 processor lookup passed\r\n"
 +.Lshadow_msm_tables_ok:
 +	.asciz	"Shadow-MSM: initial page tables created\r\n"
-+.Lshadow_msm_mmu_next:
-+	.asciz	"Shadow-MSM: enabling the Linux MMU next\r\n"
++.Lshadow_msm_cpu_setup:
++	.asciz	"Shadow-MSM: calling ARM926 processor setup\r\n"
++.Lshadow_msm_cpu_setup_returned:
++	.asciz	"Shadow-MSM: ARM926 setup returned; enabling MMU next\r\n"
 +	.align	2
 +#endif
 +
  /*
   * Setup the initial page tables.  We only setup the barest
   * amount which are required to get the kernel running, which
+diff --git a/arch/arm/mm/proc-arm926.S b/arch/arm/mm/proc-arm926.S
+index 134426e..b5aaf97 100644
+--- a/arch/arm/mm/proc-arm926.S
++++ b/arch/arm/mm/proc-arm926.S
+@@ -455,12 +455,25 @@ ENDPROC(cpu_arm926_do_resume)
+ 
+ 	.type	__arm926_setup, #function
+ __arm926_setup:
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	mov	r7, lr
++	adr_l	r11, .Lshadow_msm_arm926_entered
++	bl	__shadow_msm_trace
++#endif
+ 	mov	r0, #0
+ 	mcr	p15, 0, r0, c7, c7		@ invalidate I,D caches on v4
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r11, .Lshadow_msm_arm926_cache_ok
++	bl	__shadow_msm_trace
++#endif
+ 	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer on v4
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r0, c8, c7		@ invalidate I,D TLBs on v4
+ #endif
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r11, .Lshadow_msm_arm926_tlb_ok
++	bl	__shadow_msm_trace
++#endif
+ 
+ 
+ #ifdef CONFIG_CPU_DCACHE_WRITETHROUGH
+@@ -478,9 +491,26 @@ __arm926_setup:
+ #ifdef CONFIG_CPU_CACHE_ROUND_ROBIN
+ 	orr	r0, r0, #0x4000			@ .1.. .... .... ....
+ #endif
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r11, .Lshadow_msm_arm926_control_ok
++	bl	__shadow_msm_trace
++	mov	lr, r7
++#endif
+ 	ret	lr
+ 	.size	__arm926_setup, . - __arm926_setup
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++.Lshadow_msm_arm926_entered:
++	.asciz	"Shadow-MSM: entered ARM926 setup\r\n"
++.Lshadow_msm_arm926_cache_ok:
++	.asciz	"Shadow-MSM: ARM926 cache invalidate returned\r\n"
++.Lshadow_msm_arm926_tlb_ok:
++	.asciz	"Shadow-MSM: ARM926 TLB invalidate returned\r\n"
++.Lshadow_msm_arm926_control_ok:
++	.asciz	"Shadow-MSM: ARM926 control word ready\r\n"
++	.align	2
++#endif
++
+ 	/*
+ 	 *  R
+ 	 * .RVI ZFRS BLDP WCAM
