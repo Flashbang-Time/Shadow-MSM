@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+build/
 
 # Local captures, logs, and private device data
 *.log

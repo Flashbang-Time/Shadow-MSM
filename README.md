@@ -68,6 +68,7 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Built and hardware-tested BL1 0.1 with boot logs and system information
 - [x] Built BL1 0.2 Linux-handoff validation and a minimal device tree
 - [x] Verified BL1 0.2 dry run on the target
+- [x] Built and independently verified the first Linux v6.1 ARM926 probe
 - [ ] Establish an independent post-handoff UART or USB console
 - [ ] Add MSM6290 timer and interrupt-controller support
 - [ ] Reach the first Linux decompressor/kernel banner
