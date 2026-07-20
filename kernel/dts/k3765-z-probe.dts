@@ -20,9 +20,14 @@
 		bootargs = "loglevel=8 ignore_loglevel initcall_debug";
 	};
 
-	memory@100000 {
+	/*
+	 * Linux v6.1's ARM DT-assisted AUTO_ZRELADDR path requires the selected
+	 * physical base to be 2 MiB aligned.  Leave the first MiB of the observed
+	 * SDRAM window unused for this first probe.
+	 */
+	memory@200000 {
 		device_type = "memory";
-		reg = <0x00100000 0x01f00000>;
+		reg = <0x00200000 0x01e00000>;
 	};
 
 	cpus {

@@ -19,6 +19,12 @@ string routine only while the MMU is off. The device tree reserves
 `0x00800000..0x008fffff` so the kernel image and allocator do not overwrite
 that runtime during this experiment.
 
+The DT deliberately exposes RAM from `0x00200000`, not the observed
+`0x00100000`. Linux v6.1's ARM DT-assisted `AUTO_ZRELADDR` path rounds the
+lowest memory address up to a 2 MiB boundary for phys/virt patching. Making
+that alignment explicit gives a deterministic decompression target of
+`0x00208000` and leaves the first MiB untouched.
+
 ## Reproducible build
 
 The GitHub Actions workflow clones the official Linux `v6.1` tag, applies the

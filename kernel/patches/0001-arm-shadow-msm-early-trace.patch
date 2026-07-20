@@ -91,7 +91,7 @@ index 29e2900..c919cd3 100644
  	/*
  	 * The following calls CPU specific code in a position independent
  	 * manner.  See arch/arm/mm/proc-*.S for details.  r10 = base of
-@@ -169,10 +184,41 @@ ENTRY(stext)
+@@ -169,10 +184,42 @@ ENTRY(stext)
  	ldr	r12, [r10, #PROCINFO_INITFUNC]
  	add	r12, r12, r10
  	ret	r12
@@ -107,10 +107,11 @@ index 29e2900..c919cd3 100644
  
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
 +/*
-+ * The Shadow-MSM BL1 contract supplies a valid temporary stack at
-+ * 0x01fff000. Preserve every general-purpose register around the initialized
-+ * OEM diagnostic string routine so these milestones do not alter the normal
-+ * ARM kernel entry contract.
++ * BL1 supplies a valid entry stack and the zImage decompressor establishes
++ * its own working stack before entering this image. Preserve every
++ * general-purpose register around the initialized OEM diagnostic string
++ * routine so these milestones do not alter the normal ARM kernel entry
++ * contract.
 + */
 +ENTRY(__shadow_msm_trace)
 +	push	{r0-r12, lr}

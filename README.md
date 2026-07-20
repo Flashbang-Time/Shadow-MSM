@@ -83,11 +83,11 @@ flowchart LR
     BL1["Shadow-MSM BL1<br/>0x01000000"]
     ZI["Linux zImage staging<br/>0x01200000"]
     DTB["Device tree<br/>0x01F80000"]
-    LINUX["Linux<br/>future target: 0x00108000"]
+    LINUX["Linux<br/>probe entry: 0x00208000"]
 
     PBL -->|"RAM upload + execute"| S0
     S0 -->|"CRC + bounded call"| BL1
-    BL1 -.->|"validated handoff; jump not enabled yet"| ZI
+    BL1 -.->|"guarded, validated handoff"| ZI
     DTB -.-> BL1
     ZI -.-> LINUX
 ```
@@ -100,7 +100,8 @@ prints hardware and CP15 state, and currently returns cleanly to stage-0.
 
 | Address range | Purpose |
 |---|---|
-| `0x00100000..0x007FFFFF` | Future decompressed Linux region |
+| `0x00100000..0x001FFFFF` | Conservatively unused low SDRAM |
+| `0x00200000..0x007FFFFF` | Linux RAM; `Image` starts at `0x00208000` |
 | `0x00800000..0x00819DC7` | RAM-only stage-0 monitor |
 | `0x01000000` | BL1 load and entry |
 | `0x01200000..0x01EFFFFF` | zImage staging window, 13 MiB maximum |
