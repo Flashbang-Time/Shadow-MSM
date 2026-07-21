@@ -6,8 +6,9 @@ and early kernel-entry milestones on the ZTE K3765-Z. It calls the initialized,
 RAM-resident ARMPRG diagnostic string routine at physical address 0x00816cf4.
 A dedicated trace stack lives at 0x008ff000 because Linux repurposes r13
 before the ARM926 setup callback. A temporary non-cacheable identity map keeps
-the resident runtime reachable across the first MMU transition. The device
-tree keeps the entire monitor window reserved.
+the resident runtime reachable across the first MMU transition. Additional
+checkpoints bracket __mmap_switched, BSS clearing, and the start_kernel branch.
+The device tree keeps the entire monitor window reserved.
 
 This patch is intentionally device-specific and is not suitable for a generic
 ARM kernel.
@@ -193,6 +194,56 @@ index 29e2900..c919cd3 100644
  	.popsection
  
  
+diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
+--- a/arch/arm/kernel/head-common.S
++++ b/arch/arm/kernel/head-common.S
+@@ -75,6 +75,10 @@
+  */
+ 	__INIT
+ __mmap_switched:
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r11, .Lshadow_msm_mmap_entered
++	bl	__shadow_msm_trace
++#endif
+ 
+ 	mov	r7, r1
+ 	mov	r8, r2
+@@ -104,6 +108,10 @@ __mmap_switched:
+ 	sub	r2, r1, r0
+ 	mov	r1, #0
+ 	bl	__memset			@ clear .bss
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r11, .Lshadow_msm_bss_cleared
++	bl	__shadow_msm_trace
++#endif
+ 
+ 	adr_l	r0, init_task			@ get swapper task_struct
+ 	set_current r0, r1
+@@ -117,9 +125,23 @@ __mmap_switched:
+ #ifdef CONFIG_KASAN
+ 	bl	kasan_early_init
+ #endif
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	adr_l	r11, .Lshadow_msm_start_kernel
++	bl	__shadow_msm_trace
++#endif
+ 	mov	lr, #0
+ 	b	start_kernel
+ ENDPROC(__mmap_switched)
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++.Lshadow_msm_mmap_entered:
++	.asciz	"Shadow-MSM: entered __mmap_switched at the kernel virtual address\r\n"
++.Lshadow_msm_bss_cleared:
++	.asciz	"Shadow-MSM: __mmap_switched cleared BSS\r\n"
++.Lshadow_msm_start_kernel:
++	.asciz	"Shadow-MSM: branching to start_kernel\r\n"
++	.align	2
++#endif
++
+ 	.align	2
+ 	.type	__mmap_switched_data, %object
+ __mmap_switched_data:
 diff --git a/arch/arm/mm/proc-arm926.S b/arch/arm/mm/proc-arm926.S
 index 134426e..b5aaf97 100644
 --- a/arch/arm/mm/proc-arm926.S

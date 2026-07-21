@@ -14,6 +14,9 @@ prove, with visible milestones, that:
 5. Linux creates its initial page tables;
 6. the ARM926 cache/TLB/control setup returns; and
 7. execution reaches the MMU-enable boundary.
+8. execution reaches the high virtual `__mmap_switched` path;
+9. BSS initialization completes; and
+10. execution branches into `start_kernel`.
 
 The early trace patch borrows the initialized RAM-resident ARMPRG diagnostic
 string routine only while the MMU is off. The device tree reserves
@@ -82,6 +85,9 @@ Shadow-MSM: ARM926 TLB invalidate returned
 Shadow-MSM: ARM926 control word ready
 Shadow-MSM: ARM926 setup returned; enabling MMU next
 Shadow-MSM: MMU enabled; identity execution continues
+Shadow-MSM: entered __mmap_switched at the kernel virtual address
+Shadow-MSM: __mmap_switched cleared BSS
+Shadow-MSM: branching to start_kernel
 ```
 
 For this diagnostic build only, the initial L1 table keeps a temporary

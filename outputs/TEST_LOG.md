@@ -481,6 +481,41 @@ technical reference. The monitor and host loader implement no NAND operation.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
 
+## 2026-07-22 — post-MMU identity-execution checkpoint
+
+- GitHub Actions run
+  [`29766396164`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29766396164)
+  built commit `c3b8cea` successfully.
+- Verified Linux Image:
+  - load/entry: `0x00208000`
+  - size: `3,569,520`
+  - SHA-256:
+    `22fe17ee6dc3e717c628a06a88ae4116b1294f9cd596b11d1f52856aa4fd8034`
+  - host and target-side BL1 fingerprint CRC32: `0x3A650669`
+- BL1 0.4:
+  - load address: `0x01000000`
+  - size: `5,933`
+  - SHA-256:
+    `1090dcf5925eca2005e974e7fa57ed7af8ff2fb30bf92ccb70bf03b9a10b0097`
+  - target CRC32: `0x7ED5F178`
+- DTB:
+  - load address: `0x01F80000`
+  - size: `549`
+  - target CRC32: `0x5D395650`
+- Target output advanced beyond the previous MMU boundary and reached:
+
+  ```text
+  Shadow-MSM: MMU enabled; identity execution continues
+  ```
+
+- The raw transport then disconnected and the stock composite ports (`COM26`,
+  `COM27`, and `COM30`) returned. This proves translated execution continued
+  after writing SCTLR; the next diagnostic build brackets the high virtual
+  `__mmap_switched` path, BSS clearing, and the `start_kernel` branch.
+- Preserved transcript: `outputs/bl1_0.4_postmmu_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
 ## 2026-07-20 — Returning ARM926 identity-MMU probe
 
 - Raw downloader/stage-0 port: `COM50`
