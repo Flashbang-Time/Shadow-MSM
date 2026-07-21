@@ -17,6 +17,9 @@ prove, with visible milestones, that:
 8. execution reaches the high virtual `__mmap_switched` path;
 9. BSS initialization completes; and
 10. execution branches into `start_kernel`.
+11. early generic C initialization completes;
+12. the device tree selects the K3765-Z machine; and
+13. ARM memory discovery reaches the `paging_init` boundary.
 
 The early trace patch borrows the initialized RAM-resident ARMPRG diagnostic
 string routine only while the MMU is off. The device tree reserves
@@ -88,6 +91,17 @@ Shadow-MSM: MMU enabled; identity execution continues
 Shadow-MSM: entered __mmap_switched at the kernel virtual address
 Shadow-MSM: __mmap_switched cleared BSS
 Shadow-MSM: branching to start_kernel
+Shadow-MSM: entered start_kernel C code
+Shadow-MSM: initial task stack is ready
+Shadow-MSM: processor ID setup completed
+Shadow-MSM: earliest generic initialization completed
+Shadow-MSM: entering ARM setup_arch
+Shadow-MSM: entered setup_arch
+Shadow-MSM: setup_processor completed
+Shadow-MSM: device-tree machine selected
+Shadow-MSM: early_mm_init completed
+Shadow-MSM: ARM memblock initialization completed
+Shadow-MSM: entering paging_init
 ```
 
 For this diagnostic build only, the initial L1 table keeps a temporary

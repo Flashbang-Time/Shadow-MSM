@@ -678,3 +678,32 @@ technical reference. The monitor and host loader implement no NAND operation.
   - `outputs/bl1_0.4_fixedtrace_boot_20260720.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-22 — high-virtual Linux startup proof
+
+- GitHub Actions run
+  [`29871565525`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29871565525)
+  built commit `d14ecab` successfully.
+- Verified Linux Image:
+  - load/entry: `0x00208000`
+  - size: `3,569,520`
+  - SHA-256:
+    `efcd07573a3b6fab9b7d84e8098693f16891d58f4e0a091e8993f1a881a94765`
+  - host CRC32: `0x0AB1B805`
+- Target-side BL1 CRC32 was `0x7ED5F178`; target-side DTB CRC32 was
+  `0x5D395650`. BL1 also passed all 17 embedded Image fingerprints.
+- Target output reached all three new checkpoints:
+
+  ```text
+  Shadow-MSM: entered __mmap_switched at the kernel virtual address
+  Shadow-MSM: __mmap_switched cleared BSS
+  Shadow-MSM: branching to start_kernel
+  ```
+
+- This proves the high virtual kernel mapping, BSS clearing, early global
+  stores, and branch into Linux C startup all work on the MSM6290. The next
+  diagnostic build instruments `start_kernel`, ARM machine selection,
+  memblock discovery, and the `paging_init` boundary.
+- Preserved transcript: `outputs/bl1_0.4_highvirt_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

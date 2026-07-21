@@ -7,8 +7,9 @@ RAM-resident ARMPRG diagnostic string routine at physical address 0x00816cf4.
 A dedicated trace stack lives at 0x008ff000 because Linux repurposes r13
 before the ARM926 setup callback. A temporary non-cacheable identity map keeps
 the resident runtime reachable across the first MMU transition. Additional
-checkpoints bracket __mmap_switched, BSS clearing, and the start_kernel branch.
-The device tree keeps the entire monitor window reserved.
+checkpoints bracket __mmap_switched, BSS clearing, the start_kernel branch,
+early generic initialization, ARM device-tree setup, and the paging_init
+boundary. The device tree keeps the entire monitor window reserved.
 
 This patch is intentionally device-specific and is not suitable for a generic
 ARM kernel.
@@ -244,6 +245,128 @@ diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
  	.align	2
  	.type	__mmap_switched_data, %object
  __mmap_switched_data:
+diff --git a/init/main.c b/init/main.c
+index aa21add..20a7274 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -933,17 +933,36 @@ static void __init print_unknown_bootoptions(void)
+ 	memblock_free(unknown_options, len);
+ }
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++static __always_inline void shadow_msm_c_trace(const char *message)
++{
++	((void (*)(const char *))0x00816cf4UL)(message);
++}
++#endif
++
+ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ {
+ 	char *command_line;
+ 	char *after_dashes;
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: entered start_kernel C code\r\n");
++#endif
+ 	set_task_stack_end_magic(&init_task);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: initial task stack is ready\r\n");
++#endif
+ 	smp_setup_processor_id();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: processor ID setup completed\r\n");
++#endif
+ 	debug_objects_early_init();
+ 	init_vmlinux_build_id();
+ 
+ 	cgroup_init_early();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: earliest generic initialization completed\r\n");
++#endif
+ 
+ 	local_irq_disable();
+ 	early_boot_irqs_disabled = true;
+@@ -956,6 +975,9 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ 	page_address_init();
+ 	pr_notice("%s", linux_banner);
+ 	early_security_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: entering ARM setup_arch\r\n");
++#endif
+ 	setup_arch(&command_line);
+ 	setup_boot_config();
+ 	setup_command_line(command_line);
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index cb88c6e..8b58de7 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -83,6 +83,13 @@ extern void adjust_lowmem_bounds(void);
+ extern enum reboot_mode reboot_mode;
+ extern void setup_dma_zone(const struct machine_desc *desc);
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++static __always_inline void shadow_msm_arch_trace(const char *message)
++{
++	((void (*)(const char *))0x00816cf4UL)(message);
++}
++#endif
++
+ unsigned int processor_id;
+ EXPORT_SYMBOL(processor_id);
+ unsigned int __machine_arch_type __read_mostly;
+@@ -1097,10 +1104,16 @@ void __init setup_arch(char **cmdline_p)
+ 	const struct machine_desc *mdesc = NULL;
+ 	void *atags_vaddr = NULL;
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_arch_trace("Shadow-MSM: entered setup_arch\r\n");
++#endif
+ 	if (__atags_pointer)
+ 		atags_vaddr = FDT_VIRT_BASE(__atags_pointer);
+ 
+ 	setup_processor();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_arch_trace("Shadow-MSM: setup_processor completed\r\n");
++#endif
+ 	if (atags_vaddr) {
+ 		mdesc = setup_machine_fdt(atags_vaddr);
+ 		if (mdesc)
+@@ -1121,6 +1134,9 @@ void __init setup_arch(char **cmdline_p)
+ 	machine_desc = mdesc;
+ 	machine_name = mdesc->name;
+ 	dump_stack_set_arch_desc("%s", mdesc->name);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_arch_trace("Shadow-MSM: device-tree machine selected\r\n");
++#endif
+ 
+ 	if (mdesc->reboot_mode != REBOOT_HARD)
+ 		reboot_mode = mdesc->reboot_mode;
+@@ -1138,6 +1154,9 @@ void __init setup_arch(char **cmdline_p)
+ 
+ #ifdef CONFIG_MMU
+ 	early_mm_init(mdesc);
++#endif
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_arch_trace("Shadow-MSM: early_mm_init completed\r\n");
+ #endif
+ 	setup_dma_zone(mdesc);
+ 	xen_early_init();
+@@ -1150,9 +1169,15 @@ void __init setup_arch(char **cmdline_p)
+ 	arm_memblock_init(mdesc);
+ 	/* Memory may have been removed so recalculate the bounds. */
+ 	adjust_lowmem_bounds();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_arch_trace("Shadow-MSM: ARM memblock initialization completed\r\n");
++#endif
+ 
+ 	early_ioremap_reset();
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_arch_trace("Shadow-MSM: entering paging_init\r\n");
++#endif
+ 	paging_init(mdesc);
+ 	kasan_init();
+ 	request_standard_resources(mdesc);
 diff --git a/arch/arm/mm/proc-arm926.S b/arch/arm/mm/proc-arm926.S
 index 134426e..b5aaf97 100644
 --- a/arch/arm/mm/proc-arm926.S
