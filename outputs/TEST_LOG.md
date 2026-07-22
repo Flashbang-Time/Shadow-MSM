@@ -886,3 +886,29 @@ technical reference. The monitor and host loader implement no NAND operation.
 - Preserved transcript: `outputs/bl1_0.4_irq_enable_boot_20260722.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-22 - delay calibration identifies the missing hardware timer
+
+- GitHub Actions run
+  [`29920222286`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29920222286)
+  built commit `66747f2` successfully.
+- Verified Linux Image SHA-256:
+  `421c2b634d52e9784fab41b0225815b39ff50c95613a67eee742e4d64ad5ba9c`;
+  host CRC32: `0x96B1D7DD`.
+- Target-side BL1 CRC32 was `0x8FC47C99`; target-side DTB CRC32 was
+  `0x5D395650`; all 17 embedded Image fingerprints passed.
+- Linux completed lock dependency setup, its locking self-test, memory
+  encryption hooks, per-CPU page sets, NUMA policy, both ACPI hooks, and
+  scheduler-clock initialization. It then reached:
+
+  ```text
+  Shadow-MSM: entering delay-loop calibration
+  ```
+
+- The repeatable stall inside `calibrate_delay()` proves that the generic
+  timekeeping setup returns, but no registered MSM6290 hardware timer is
+  advancing `jiffies`. The next probe uses a temporary fixed `lpj` value to
+  map later boot stages while the real timer/IRQ driver is developed.
+- Preserved transcript: `outputs/bl1_0.4_delay_calibration_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

@@ -251,9 +251,9 @@ diff --git a/init/main.c b/init/main.c
 index aa21add..20a7274 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -933,17 +933,36 @@ static void __init print_unknown_bootoptions(void)
- 	memblock_free(unknown_options, len);
- }
+@@ -680,18 +680,34 @@ static void __init setup_command_line(char *command_line)
+ 
+ static __initdata DECLARE_COMPLETION(kthreadd_done);
  
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
 +static __always_inline void shadow_msm_c_trace(const char *message)
@@ -262,8 +262,59 @@ index aa21add..20a7274 100644
 +}
 +#endif
 +
- asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ noinline void __ref rest_init(void)
  {
+ 	struct task_struct *tsk;
+ 	int pid;
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: entered rest_init\r\n");
++#endif
+ 	rcu_scheduler_starting();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: RCU scheduler started\r\n");
++#endif
+ 	/*
+ 	 * We need to spawn init first so that it obtains pid 1, however
+ 	 * the init task will end up wanting to create kthreads, which, if
+ 	 * we schedule it before we create kthreadd, will OOPS.
+ 	 */
+ 	pid = user_mode_thread(kernel_init, NULL, CLONE_FS);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: PID 1 task created\r\n");
++#endif
+ 	/*
+ 	 * Pin init on the boot CPU. Task migration is not properly working
+ 	 * until sched_init_smp() has been run. It will set the allowed
+@@ -705,6 +721,9 @@ noinline void __ref rest_init(void)
+ 
+ 	numa_default_policy();
+ 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: kthreadd task created\r\n");
++#endif
+ 	rcu_read_lock();
+ 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
+ 	rcu_read_unlock();
+@@ -719,11 +738,17 @@ noinline void __ref rest_init(void)
+ 	system_state = SYSTEM_SCHEDULING;
+ 
+ 	complete(&kthreadd_done);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: kthreadd completion signalled\r\n");
++#endif
+ 
+ 	/*
+ 	 * The boot idle thread must execute schedule()
+ 	 * at least once to get things moving:
+ 	 */
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: entering first schedule\r\n");
++#endif
+ 	schedule_preempt_disabled();
+ 	/* Call into cpu_idle with preempt disabled */
+ 	cpu_startup_entry(CPUHP_ONLINE);
+@@ -938,12 +963,24 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
  	char *command_line;
  	char *after_dashes;
  
@@ -589,7 +640,7 @@ index aa21add..20a7274 100644
  
  #ifdef CONFIG_BLK_DEV_INITRD
  	if (initrd_start && !initrd_below_start_ok &&
-@@ -1102,12 +1285,31 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+@@ -1102,14 +1303,36 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
  	}
  #endif
  	setup_per_cpu_pageset();
@@ -620,7 +671,55 @@ index aa21add..20a7274 100644
 +#endif
  	pid_idr_init();
  	anon_vma_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: PID and anonymous VMA initialization completed\r\n");
++#endif
  #ifdef CONFIG_X86
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+@@ -1118,19 +1341,31 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ 	cred_init();
+ 	fork_init();
+ 	proc_caches_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: task and process caches initialized\r\n");
++#endif
+ 	uts_ns_init();
+ 	key_init();
+ 	security_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: namespace, key, and security initialization completed\r\n");
++#endif
+ 	dbg_late_init();
+ 	net_ns_init();
+ 	vfs_caches_init();
+ 	pagecache_init();
+ 	signals_init();
+ 	seq_file_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: VFS, page cache, signal, and seq-file initialization completed\r\n");
++#endif
+ 	proc_root_init();
+ 	nsfs_init();
+ 	cpuset_init();
+ 	cgroup_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: proc, namespace FS, cpuset, and cgroup initialization completed\r\n");
++#endif
+ 	taskstats_init_early();
+ 	delayacct_init();
+ 
+@@ -1140,6 +1375,10 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ 	acpi_subsystem_init();
+ 	arch_post_acpi_subsys_init();
+ 	kcsan_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: late generic initialization completed\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering arch_call_rest_init\r\n");
++#endif
+ 
+ 	/* Do the rest non-__init'ed, we're now alive */
+ 	arch_call_rest_init();
 diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
 index cb88c6e..8b58de7 100644
 --- a/arch/arm/kernel/setup.c

@@ -17,7 +17,11 @@
 	#size-cells = <1>;
 
 	chosen {
-		bootargs = "loglevel=8 ignore_loglevel initcall_debug";
+		/*
+		 * Temporary bring-up value: the hardware timer is not registered yet,
+		 * so automatic delay calibration cannot observe advancing jiffies.
+		 */
+		bootargs = "loglevel=8 ignore_loglevel initcall_debug lpj=1000000";
 	};
 
 	/*
