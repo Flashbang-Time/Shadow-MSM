@@ -20,6 +20,8 @@ prove, with visible milestones, that:
 11. early generic C initialization completes;
 12. the device tree selects the K3765-Z machine; and
 13. ARM memory discovery reaches the `paging_init` boundary.
+14. the permanent page tables preserve the resident monitor mapping; and
+15. `paging_init` returns to generic kernel startup.
 
 The early trace patch borrows the initialized RAM-resident ARMPRG diagnostic
 string routine only while the MMU is off. The device tree reserves
@@ -102,13 +104,23 @@ Shadow-MSM: device-tree machine selected
 Shadow-MSM: early_mm_init completed
 Shadow-MSM: ARM memblock initialization completed
 Shadow-MSM: entering paging_init
+Shadow-MSM: permanent table kept monitor identity map
+Shadow-MSM: map_lowmem completed
+Shadow-MSM: permanent kernel mappings completed
+Shadow-MSM: ARM device mappings completed
+Shadow-MSM: bootmem_init completed
+Shadow-MSM: leaving paging_init
+Shadow-MSM: paging_init completed
+Shadow-MSM: setup_arch returned to start_kernel
 ```
 
 For this diagnostic build only, the initial L1 table keeps a temporary
 non-cacheable 1:1 section map using the ARM926 procinfo IO flags. Linux's
 normal high virtual kernel mapping is installed over it, and `paging_init()`
-later replaces the early table. This keeps the resident trace transport
-reachable across the first translation boundary.
+later clears all but the single 2 MiB entry covering `0x00800000`. This keeps
+the resident trace transport reachable across the first translation boundary
+and permanent page-table construction. The extra low mapping is strictly a
+temporary diagnostic aid and must be removed from a production kernel.
 
 No flash driver, NAND command, partition operation, or persistent-storage
 write is part of this build path.

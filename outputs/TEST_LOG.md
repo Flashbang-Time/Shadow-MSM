@@ -707,3 +707,37 @@ technical reference. The monitor and host loader implement no NAND operation.
 - Preserved transcript: `outputs/bl1_0.4_highvirt_boot_20260722.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-22 — early C, DT, memblock, and paging boundary
+
+- GitHub Actions run
+  [`29872580738`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29872580738)
+  built commit `1a7b5d6` successfully.
+- Verified Linux Image SHA-256:
+  `02f807e7e5b7e6141f232b8262cad575f03bc1dfa9d482703b9aaa8675214af8`;
+  host CRC32: `0x5A29B4E3`.
+- Target-side BL1 CRC32 was `0xB92429C2`; target-side DTB CRC32 was
+  `0x5D395650`; all 17 embedded Image fingerprints passed.
+- Linux reached every new checkpoint through:
+
+  ```text
+  Shadow-MSM: entered start_kernel C code
+  Shadow-MSM: initial task stack is ready
+  Shadow-MSM: processor ID setup completed
+  Shadow-MSM: earliest generic initialization completed
+  Shadow-MSM: entering ARM setup_arch
+  Shadow-MSM: entered setup_arch
+  Shadow-MSM: setup_processor completed
+  Shadow-MSM: device-tree machine selected
+  Shadow-MSM: early_mm_init completed
+  Shadow-MSM: ARM memblock initialization completed
+  Shadow-MSM: entering paging_init
+  ```
+
+- This proves Linux C startup, DT machine selection, early MM setup, and ARM
+  memblock discovery work. Inspection of Linux v6.1 `prepare_page_table()`
+  identified the precise disconnect cause: it clears the temporary low
+  identity entry containing the resident diagnostic runtime.
+- Preserved transcript: `outputs/bl1_0.4_earlyc_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

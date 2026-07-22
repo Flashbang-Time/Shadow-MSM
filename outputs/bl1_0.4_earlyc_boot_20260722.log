@@ -1,0 +1,34 @@
+K3765-Z BL1 0.4 direct Linux Image boot
+Mode  : validated non-returning Image handoff
+Flash : untouched; RAM execution only
+Image sparse fingerprints: PASS
+DTB magic      : 0xEDFE0DD0
+DTB total size : 0x00000225
+Validation PASS
+LED checkpoint : blue
+JUMPING DIRECTLY TO DECOMPRESSED LINUX IMAGE
+Shadow-MSM: entered decompressed Linux head.S
+Shadow-MSM: ARM926 processor lookup passed
+Shadow-MSM: initial page tables created
+Shadow-MSM: calling ARM926 processor setup
+Shadow-MSM: entered ARM926 setup
+Shadow-MSM: ARM926 cache invalidate returned
+Shadow-MSM: ARM926 TLB invalidate returned
+Shadow-MSM: ARM926 control word ready
+Shadow-MSM: ARM926 setup returned; enabling MMU next
+Shadow-MSM: MMU enabled; identity execution continues
+Shadow-MSM: entered __mmap_switched at the kernel virtual address
+Shadow-MSM: __mmap_switched cleared BSS
+Shadow-MSM: branching to start_kernel
+Shadow-MSM: entered start_kernel C code
+Shadow-MSM: initial task stack is ready
+Shadow-MSM: processor ID setup completed
+Shadow-MSM: earliest generic initialization completed
+Shadow-MSM: entering ARM setup_arch
+Shadow-MSM: entered setup_arch
+Shadow-MSM: setup_processor completed
+Shadow-MSM: device-tree machine selected
+Shadow-MSM: early_mm_init completed
+Shadow-MSM: ARM memblock initialization completed
+Shadow-MSM: entering paging_init
+Transport disconnected after handoff: GetOverlappedResult failed (PermissionError(13, 'A device attached to the system is not functioning.', None, 31))

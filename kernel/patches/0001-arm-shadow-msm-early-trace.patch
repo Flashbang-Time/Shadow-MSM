@@ -9,7 +9,9 @@ before the ARM926 setup callback. A temporary non-cacheable identity map keeps
 the resident runtime reachable across the first MMU transition. Additional
 checkpoints bracket __mmap_switched, BSS clearing, the start_kernel branch,
 early generic initialization, ARM device-tree setup, and the paging_init
-boundary. The device tree keeps the entire monitor window reserved.
+boundary. The diagnostic build preserves the single 2 MiB identity-map entry
+covering the resident runtime while Linux replaces the rest of the bootstrap
+table. The device tree keeps the monitor's occupied 1 MiB window reserved.
 
 This patch is intentionally device-specific and is not suitable for a generic
 ARM kernel.
@@ -286,7 +288,7 @@ index aa21add..20a7274 100644
  
  	local_irq_disable();
  	early_boot_irqs_disabled = true;
-@@ -956,6 +975,9 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+@@ -956,6 +975,12 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
  	page_address_init();
  	pr_notice("%s", linux_banner);
  	early_security_init();
@@ -294,6 +296,9 @@ index aa21add..20a7274 100644
 +	shadow_msm_c_trace("Shadow-MSM: entering ARM setup_arch\r\n");
 +#endif
  	setup_arch(&command_line);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: setup_arch returned to start_kernel\r\n");
++#endif
  	setup_boot_config();
  	setup_command_line(command_line);
 diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
@@ -351,7 +356,7 @@ index cb88c6e..8b58de7 100644
  #endif
  	setup_dma_zone(mdesc);
  	xen_early_init();
-@@ -1150,9 +1169,15 @@ void __init setup_arch(char **cmdline_p)
+@@ -1150,9 +1169,18 @@ void __init setup_arch(char **cmdline_p)
  	arm_memblock_init(mdesc);
  	/* Memory may have been removed so recalculate the bounds. */
  	adjust_lowmem_bounds();
@@ -365,8 +370,90 @@ index cb88c6e..8b58de7 100644
 +	shadow_msm_arch_trace("Shadow-MSM: entering paging_init\r\n");
 +#endif
  	paging_init(mdesc);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_arch_trace("Shadow-MSM: paging_init completed\r\n");
++#endif
  	kasan_init();
  	request_standard_resources(mdesc);
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -1311,8 +1311,14 @@ static __init void prepare_page_table(void)
+ 	for (addr = KASAN_SHADOW_END; addr < MODULES_VADDR; addr += PMD_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ #else
+-	for (addr = 0; addr < MODULES_VADDR; addr += PMD_SIZE)
++	for (addr = 0; addr < MODULES_VADDR; addr += PMD_SIZE) {
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++		/* Keep only the resident 0x00800000 diagnostic runtime reachable. */
++		if (addr == 0x00800000UL)
++			continue;
++#endif
+ 		pmd_clear(pmd_off_k(addr));
++	}
+ #endif
+ 
+ #ifdef CONFIG_XIP_KERNEL
+@@ -1758,6 +1764,13 @@ static void __init map_kernel(void)
+ #endif
+ }
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++static __always_inline void shadow_msm_mmu_trace(const char *message)
++{
++	((void (*)(const char *))0x00816cf4UL)(message);
++}
++#endif
++
+ void __init paging_init(const struct machine_desc *mdesc)
+ {
+ 	void *zero_page;
+@@ -1766,7 +1779,13 @@ void __init paging_init(const struct machine_desc *mdesc)
+ 		 kernel_sec_start, kernel_sec_end);
+ 
+ 	prepare_page_table();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: permanent table kept monitor identity map\r\n");
++#endif
+ 	map_lowmem();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: map_lowmem completed\r\n");
++#endif
+ 	memblock_set_current_limit(arm_lowmem_limit);
+ 	pr_debug("lowmem limit is %08llx\n", (long long)arm_lowmem_limit);
+ 	/*
+@@ -1774,9 +1793,15 @@ void __init paging_init(const struct machine_desc *mdesc)
+ 	 * be used
+ 	 */
+ 	map_kernel();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: permanent kernel mappings completed\r\n");
++#endif
+ 	dma_contiguous_remap();
+ 	early_fixmap_shutdown();
+ 	devicemaps_init(mdesc);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: ARM device mappings completed\r\n");
++#endif
+ 	kmap_init();
+ 	tcm_init();
+ 
+@@ -1786,9 +1811,15 @@ void __init paging_init(const struct machine_desc *mdesc)
+ 	zero_page = early_alloc(PAGE_SIZE);
+ 
+ 	bootmem_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: bootmem_init completed\r\n");
++#endif
+ 
+ 	empty_zero_page = virt_to_page(zero_page);
+ 	__flush_dcache_page(NULL, empty_zero_page);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: leaving paging_init\r\n");
++#endif
+ }
+ 
+ void __init early_mm_init(const struct machine_desc *mdesc)
 diff --git a/arch/arm/mm/proc-arm926.S b/arch/arm/mm/proc-arm926.S
 index 134426e..b5aaf97 100644
 --- a/arch/arm/mm/proc-arm926.S
