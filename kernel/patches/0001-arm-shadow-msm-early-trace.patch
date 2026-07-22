@@ -401,7 +401,7 @@ index aa21add..20a7274 100644
  
  	/*
  	 * Set up the scheduler prior starting any interrupts (such as the
-@@ -1007,6 +1092,9 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+@@ -1007,18 +1092,30 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
  	 * time - but meanwhile we still have a functioning scheduler.
  	 */
  	sched_init();
@@ -411,6 +411,105 @@ index aa21add..20a7274 100644
  
  	if (WARN(!irqs_disabled(),
  		 "Interrupts were enabled *very* early, fixing it\n"))
+ 		local_irq_disable();
+ 	radix_tree_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: radix tree initialization completed\r\n");
++#endif
+ 	maple_tree_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: maple tree initialization completed\r\n");
++#endif
+ 
+ 	/*
+ 	 * Set up housekeeping before setting up workqueues to allow the unbound
+ 	 * workqueue to take non-housekeeping into account.
+ 	 */
+ 	housekeeping_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: housekeeping initialization completed\r\n");
++#endif
+ 
+ 	/*
+ 	 * Allow workqueue creation and work item queueing/cancelling
+@@ -1026,30 +1123,77 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ 	 * workqueue_init().
+ 	 */
+ 	workqueue_init_early();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: early workqueue initialization completed\r\n");
++#endif
+ 
+ 	rcu_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: RCU initialization completed\r\n");
++#endif
+ 
+ 	/* Trace events are available after this */
+ 	trace_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: trace event initialization completed\r\n");
++#endif
+ 
+ 	if (initcall_debug)
+ 		initcall_debug_enable();
+ 
+ 	context_tracking_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: context tracking initialization completed\r\n");
++#endif
+ 	/* init some links before init_ISA_irqs() */
+ 	early_irq_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: early IRQ initialization completed\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering platform IRQ initialization\r\n");
++#endif
+ 	init_IRQ();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: platform IRQ initialization completed\r\n");
++#endif
+ 	tick_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: tick initialization completed\r\n");
++#endif
+ 	rcu_init_nohz();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: no-HZ RCU initialization completed\r\n");
++#endif
+ 	init_timers();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: timer core initialization completed\r\n");
++#endif
+ 	srcu_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: SRCU initialization completed\r\n");
++#endif
+ 	hrtimers_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: high-resolution timer initialization completed\r\n");
++#endif
+ 	softirq_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: softirq initialization completed\r\n");
++#endif
+ 	timekeeping_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: timekeeping initialization completed\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering platform time initialization\r\n");
++#endif
+ 	time_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: platform time initialization completed\r\n");
++#endif
+ 
+ 	/* This must be after timekeeping is initialized */
+ 	random_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: random subsystem initialization completed\r\n");
++#endif
+ 
+ 	/* These make use of the fully initialized rng */
+ 	kfence_init();
 diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
 index cb88c6e..8b58de7 100644
 --- a/arch/arm/kernel/setup.c
