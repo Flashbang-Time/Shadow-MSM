@@ -797,3 +797,75 @@ technical reference. The monitor and host loader implement no NAND operation.
 - Preserved transcript: `outputs/bl1_0.4_devmaps_boot_20260722.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-22 - identity mappings survive the TLB flush
+
+- GitHub Actions run
+  [`29909930945`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29909930945)
+  built commit `e331393` successfully.
+- Verified Linux Image SHA-256:
+  `6ab35cbd8270c4621188c9ea40f3338cffa3d652895aeba4248fbf2ccf18f608`;
+  host CRC32: `0x328D1AFD`.
+- Target-side BL1 CRC32 was `0xEF38AFFB`; target-side DTB CRC32 was
+  `0x5D395650`; all 17 embedded Image fingerprints passed.
+- Retaining the low bootstrap identity mappings kept the resident diagnostic
+  runtime reachable across both the TLB and cache flushes. Linux completed
+  `devicemaps_init()` and reached `kmap_init()`.
+- Retaining the temporary upper vmalloc section was then proven incorrect:
+  it left a section descriptor where `kmap_init()` requires a page table.
+- Preserved transcript: `outputs/bl1_0.4_identitymap_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
+## 2026-07-22 - paging and setup_arch complete
+
+- GitHub Actions run
+  [`29910877227`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29910877227)
+  built commit `2c1944c` successfully.
+- Verified Linux Image SHA-256:
+  `69868605d1d06a6584dd745d6cef758a1fdcd1aac9f511d7fd67180c2e0f8248`;
+  host CRC32: `0x1C4557F8`.
+- Target-side BL1 CRC32 was `0x7EF359B2`; target-side DTB CRC32 was
+  `0x5D395650`; all 17 embedded Image fingerprints passed.
+- Restoring normal upper-vmalloc clearing while preserving only the required
+  low identity mappings allowed Linux to complete permanent kmap setup, TCM
+  setup, zero-page allocation, `bootmem_init()`, `paging_init()`, and finally
+  return from `setup_arch()`.
+- Preserved transcript: `outputs/bl1_0.4_fixmap_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
+## 2026-07-22 - generic memory management and scheduler complete
+
+- GitHub Actions run
+  [`29912975370`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29912975370)
+  built commit `e171e99` successfully.
+- Verified Linux Image SHA-256:
+  `c923ff8c57b16efaf295f366c454184ea635c4f1b81044738fa63d97a5de1f57`;
+  host CRC32: `0xA2852740`.
+- Target-side BL1 CRC32 was `0x42713796`; target-side DTB CRC32 was
+  `0x5D395650`; all 17 embedded Image fingerprints passed.
+- Linux completed command-line parsing, the early RNG, log and VFS caches,
+  exception sorting, trap setup, generic memory management, tracing setup,
+  and `sched_init()`.
+- Preserved transcript: `outputs/bl1_0.4_mm_sched_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
+## 2026-07-22 - IRQ core, timer core, and platform time complete
+
+- GitHub Actions run
+  [`29913982901`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29913982901)
+  built commit `28f2700` successfully.
+- Verified Linux Image SHA-256:
+  `4decdf754adbc317b1e579df09333aa251724a6a48cd07df76a3e9277f3c8e3b`;
+  host CRC32: `0x0966D539`.
+- Target-side BL1 CRC32 was `0x2711BFD0`; target-side DTB CRC32 was
+  `0x5D395650`; all 17 embedded Image fingerprints passed.
+- Linux completed radix/maple trees, housekeeping, early workqueues, RCU,
+  trace events, context tracking, early and platform IRQ initialization, the
+  tick and timer cores, softirqs, timekeeping, platform time initialization,
+  and `random_init()`.
+- Preserved transcript: `outputs/bl1_0.4_irq_timer_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
