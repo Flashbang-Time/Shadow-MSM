@@ -768,3 +768,32 @@ technical reference. The monitor and host loader implement no NAND operation.
 - Preserved transcript: `outputs/bl1_0.4_pagingfix_boot_20260722.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-22 - device-map TLB boundary
+
+- GitHub Actions run
+  [`29906374787`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29906374787)
+  built commit `e0352ee` successfully.
+- Verified Linux Image SHA-256:
+  `b9cde15e1668fa7d04cf4382620282c5a544834e1a0ef6556d23d5e6de8deb5f`;
+  host CRC32: `0xEC53646C`.
+- Target-side BL1 CRC32 was `0x29AAD42C`; target-side DTB CRC32 was
+  `0x5D395650`; all 17 embedded Image fingerprints passed.
+- Linux reached each internal device-map checkpoint through:
+
+  ```text
+  Shadow-MSM: DMA contiguous remap completed
+  Shadow-MSM: early fixmap shutdown completed
+  Shadow-MSM: vector pages allocated
+  Shadow-MSM: early trap vectors initialized
+  Shadow-MSM: static device mappings completed
+  Shadow-MSM: PCI I/O reservation completed
+  ```
+
+- The transport disconnects exactly at `local_flush_tlb_all()`. This proves
+  Linux completed device-map construction; the borrowed ARMPRG USB routine
+  was relying on stale identity-mapped device translations cleared earlier in
+  `devicemaps_init()`.
+- Preserved transcript: `outputs/bl1_0.4_devmaps_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

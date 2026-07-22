@@ -128,8 +128,11 @@ non-cacheable 1:1 section map using the ARM926 procinfo IO flags. Linux's
 normal high virtual kernel mapping is installed over it, and `paging_init()`
 later clears all but the single 2 MiB entry covering `0x00800000`. This keeps
 the resident trace transport reachable across the first translation boundary
-and permanent page-table construction. The extra low mapping is strictly a
-temporary diagnostic aid and must be removed from a production kernel.
+and permanent page-table construction. During `devicemaps_init()`, the trace
+build also temporarily retains the bootstrap identity-mapped device entries
+so ARMPRG's borrowed USB routine survives the architecture-wide TLB flush.
+These mappings are strictly diagnostic aids and must be removed from a
+production kernel once a native console is available.
 
 No flash driver, NAND command, partition operation, or persistent-storage
 write is part of this build path.

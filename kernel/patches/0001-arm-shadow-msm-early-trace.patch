@@ -408,7 +408,7 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  /*
   * Set up the device mappings.  Since we clear out the page tables for all
   * mappings above VMALLOC_START, except early fixmap, we might remove debug
-@@ -1383,8 +1396,14 @@ static void __init devicemaps_init(const struct machine_desc *mdesc)
+@@ -1383,14 +1396,26 @@ static void __init devicemaps_init(const struct machine_desc *mdesc)
  	 * Allocate the vector page early.
  	 */
  	vectors = early_alloc(PAGE_SIZE * 2);
@@ -423,6 +423,19 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  
  	/*
  	 * Clear page table except top pmd used by early fixmaps
+ 	 */
+-	for (addr = VMALLOC_START; addr < (FIXADDR_TOP & PMD_MASK); addr += PMD_SIZE)
++	for (addr = VMALLOC_START; addr < (FIXADDR_TOP & PMD_MASK); addr += PMD_SIZE) {
++#ifndef CONFIG_SHADOW_MSM_EARLY_TRACE
+ 		pmd_clear(pmd_off_k(addr));
++#endif
++	}
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: bootstrap device identity maps retained\r\n");
++#endif
+ 
+ 	if (__atags_pointer) {
+ 		/* create a read-only mapping of the device tree */
 @@ -1468,9 +1487,15 @@ static void __init devicemaps_init(const struct machine_desc *mdesc)
  	else
  		debug_ll_io_init();
