@@ -288,7 +288,7 @@ index aa21add..20a7274 100644
  
  	local_irq_disable();
  	early_boot_irqs_disabled = true;
-@@ -956,6 +975,12 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+@@ -956,16 +975,46 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
  	page_address_init();
  	pr_notice("%s", linux_banner);
  	early_security_init();
@@ -300,7 +300,41 @@ index aa21add..20a7274 100644
 +	shadow_msm_c_trace("Shadow-MSM: setup_arch returned to start_kernel\r\n");
 +#endif
  	setup_boot_config();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: boot configuration completed\r\n");
++#endif
  	setup_command_line(command_line);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: command line storage completed\r\n");
++#endif
+ 	setup_nr_cpu_ids();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: CPU ID limits completed\r\n");
++#endif
+ 	setup_per_cpu_areas();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: per-CPU areas completed\r\n");
++#endif
+ 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: boot CPU preparation completed\r\n");
++#endif
+ 	boot_cpu_hotplug_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: boot CPU hotplug state completed\r\n");
++#endif
+ 
+ 	build_all_zonelists(NULL);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: initial zone lists completed\r\n");
++#endif
+ 	page_alloc_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: page allocator initialization completed\r\n");
++#endif
+ 
+ 	pr_notice("Kernel command line: %s\n", saved_command_line);
+ 	/* parameters may set static keys */
 diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
 index cb88c6e..8b58de7 100644
 --- a/arch/arm/kernel/setup.c
