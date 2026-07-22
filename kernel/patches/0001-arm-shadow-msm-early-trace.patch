@@ -394,8 +394,8 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  #endif
  
  #ifdef CONFIG_XIP_KERNEL
-@@ -1758,6 +1764,13 @@ static void __init map_kernel(void)
- #endif
+@@ -1754,6 +1760,13 @@ static void __init early_fixmap_shutdown(void)
+ 	}
  }
  
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
@@ -405,9 +405,9 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
 +}
 +#endif
 +
- void __init paging_init(const struct machine_desc *mdesc)
- {
- 	void *zero_page;
+ /*
+  * paging_init() sets up the page tables, initialises the zone memory
+  * maps, and sets up the zero page, bad page and bad page tables.
 @@ -1766,7 +1779,13 @@ void __init paging_init(const struct machine_desc *mdesc)
  		 kernel_sec_start, kernel_sec_end);
  
