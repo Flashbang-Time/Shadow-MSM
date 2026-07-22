@@ -432,7 +432,7 @@ index aa21add..20a7274 100644
  
  	/*
  	 * Allow workqueue creation and work item queueing/cancelling
-@@ -1026,51 +1123,128 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+@@ -1026,56 +1123,136 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
  	 * workqueue_init().
  	 */
  	workqueue_init_early();
@@ -561,6 +561,66 @@ index aa21add..20a7274 100644
  	if (panic_later)
  		panic("Too many boot %s vars at `%s'", panic_later,
  		      panic_param);
+ 
+ 	lockdep_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: lock dependency initialization completed\r\n");
++#endif
+ 
+ 	/*
+ 	 * Need to run this when irqs are enabled, because it wants
+@@ -1083,6 +1260,9 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ 	 * too:
+ 	 */
+ 	locking_selftest();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: locking self-test completed\r\n");
++#endif
+ 
+ 	/*
+ 	 * This needs to be called before any devices perform DMA
+@@ -1091,6 +1271,9 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ 	 * not cause "plain-text" data to be decrypted when accessed.
+ 	 */
+ 	mem_encrypt_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: memory encryption hook completed\r\n");
++#endif
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	if (initrd_start && !initrd_below_start_ok &&
+@@ -1102,12 +1285,31 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
+ 	}
+ #endif
+ 	setup_per_cpu_pageset();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: per-CPU page sets initialized\r\n");
++#endif
+ 	numa_policy_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: NUMA policy initialization completed\r\n");
++#endif
+ 	acpi_early_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: early ACPI hook completed\r\n");
++#endif
+ 	if (late_time_init)
+ 		late_time_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: late platform time hook completed\r\n");
++#endif
+ 	sched_clock_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: scheduler clock initialization completed\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering delay-loop calibration\r\n");
++#endif
+ 	calibrate_delay();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: delay-loop calibration completed\r\n");
++#endif
+ 	pid_idr_init();
+ 	anon_vma_init();
+ #ifdef CONFIG_X86
 diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
 index cb88c6e..8b58de7 100644
 --- a/arch/arm/kernel/setup.c

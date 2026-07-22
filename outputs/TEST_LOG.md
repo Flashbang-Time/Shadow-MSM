@@ -869,3 +869,20 @@ technical reference. The monitor and host loader implement no NAND operation.
 - Preserved transcript: `outputs/bl1_0.4_irq_timer_boot_20260722.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-22 - CPU interrupts and console initialization complete
+
+- GitHub Actions run
+  [`29914962438`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29914962438)
+  built commit `28943c4` successfully.
+- Verified Linux Image SHA-256:
+  `b596aa519b02dfca95a872aaa5e8a363f197fafdfa4587599127f80c6ec701aa`;
+  host CRC32: `0xDAFF4B81`.
+- Target-side BL1 CRC32 was `0x949C7DD5`; target-side DTB CRC32 was
+  `0x5D395650`; all 17 embedded Image fingerprints passed.
+- Linux completed KFENCE, the boot stack canary, performance/profile setup,
+  cross-CPU call setup, survived the first `local_irq_enable()`, completed
+  late slab setup, and returned successfully from `console_init()`.
+- Preserved transcript: `outputs/bl1_0.4_irq_enable_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
