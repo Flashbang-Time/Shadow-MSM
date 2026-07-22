@@ -378,19 +378,17 @@ index cb88c6e..8b58de7 100644
 diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
 --- a/arch/arm/mm/mmu.c
 +++ b/arch/arm/mm/mmu.c
-@@ -1311,8 +1311,14 @@ static __init void prepare_page_table(void)
+@@ -1311,8 +1311,13 @@ static __init void prepare_page_table(void)
  	for (addr = KASAN_SHADOW_END; addr < MODULES_VADDR; addr += PMD_SIZE)
  		pmd_clear(pmd_off_k(addr));
  #else
--	for (addr = 0; addr < MODULES_VADDR; addr += PMD_SIZE)
-+	for (addr = 0; addr < MODULES_VADDR; addr += PMD_SIZE) {
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
-+		/* Keep only the resident 0x00800000 diagnostic runtime reachable. */
-+		if (addr == 0x00800000UL)
-+			continue;
-+#endif
++	/* Preserve the bootstrap identity map used by the resident USB monitor. */
++	addr = MODULES_VADDR;
++#else
+ 	for (addr = 0; addr < MODULES_VADDR; addr += PMD_SIZE)
  		pmd_clear(pmd_off_k(addr));
-+	}
++#endif
  #endif
  
  #ifdef CONFIG_XIP_KERNEL
@@ -431,7 +429,7 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
 +#endif
 +	}
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
-+	shadow_msm_mmu_trace("Shadow-MSM: bootstrap device identity maps retained\r\n");
++	shadow_msm_mmu_trace("Shadow-MSM: vmalloc bootstrap mappings retained\r\n");
 +#endif
  
  	if (__atags_pointer) {
@@ -477,7 +475,7 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  
  	prepare_page_table();
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
-+	shadow_msm_mmu_trace("Shadow-MSM: permanent table kept monitor identity map\r\n");
++	shadow_msm_mmu_trace("Shadow-MSM: low bootstrap identity mappings retained\r\n");
 +#endif
  	map_lowmem();
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
