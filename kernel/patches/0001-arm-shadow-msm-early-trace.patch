@@ -406,7 +406,7 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  /*
   * Set up the device mappings.  Since we clear out the page tables for all
   * mappings above VMALLOC_START, except early fixmap, we might remove debug
-@@ -1383,14 +1396,26 @@ static void __init devicemaps_init(const struct machine_desc *mdesc)
+@@ -1383,14 +1396,23 @@ static void __init devicemaps_init(const struct machine_desc *mdesc)
  	 * Allocate the vector page early.
  	 */
  	vectors = early_alloc(PAGE_SIZE * 2);
@@ -422,14 +422,10 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  	/*
  	 * Clear page table except top pmd used by early fixmaps
  	 */
--	for (addr = VMALLOC_START; addr < (FIXADDR_TOP & PMD_MASK); addr += PMD_SIZE)
-+	for (addr = VMALLOC_START; addr < (FIXADDR_TOP & PMD_MASK); addr += PMD_SIZE) {
-+#ifndef CONFIG_SHADOW_MSM_EARLY_TRACE
+ 	for (addr = VMALLOC_START; addr < (FIXADDR_TOP & PMD_MASK); addr += PMD_SIZE)
  		pmd_clear(pmd_off_k(addr));
-+#endif
-+	}
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
-+	shadow_msm_mmu_trace("Shadow-MSM: vmalloc bootstrap mappings retained\r\n");
++	shadow_msm_mmu_trace("Shadow-MSM: temporary vmalloc mappings cleared\r\n");
 +#endif
  
  	if (__atags_pointer) {
@@ -484,7 +480,7 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  	memblock_set_current_limit(arm_lowmem_limit);
  	pr_debug("lowmem limit is %08llx\n", (long long)arm_lowmem_limit);
  	/*
-@@ -1774,9 +1814,21 @@ void __init paging_init(const struct machine_desc *mdesc)
+@@ -1774,9 +1814,27 @@ void __init paging_init(const struct machine_desc *mdesc)
  	 * be used
  	 */
  	map_kernel();
@@ -504,10 +500,19 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
 +	shadow_msm_mmu_trace("Shadow-MSM: ARM device mappings completed\r\n");
 +#endif
  	kmap_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: permanent kmap tables completed\r\n");
++#endif
  	tcm_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: TCM initialization completed\r\n");
++#endif
  
-@@ -1786,9 +1838,15 @@ void __init paging_init(const struct machine_desc *mdesc)
+@@ -1786,9 +1844,18 @@ void __init paging_init(const struct machine_desc *mdesc)
  	zero_page = early_alloc(PAGE_SIZE);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: zero page allocated\r\n");
++#endif
  
  	bootmem_init();
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
