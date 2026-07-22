@@ -394,8 +394,8 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  #endif
  
  #ifdef CONFIG_XIP_KERNEL
-@@ -1754,6 +1760,13 @@ static void __init early_fixmap_shutdown(void)
- 	}
+@@ -1366,6 +1372,13 @@ void __init arm_mm_memblock_reserve(void)
+ #endif
  }
  
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
@@ -406,9 +406,60 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
 +#endif
 +
  /*
-  * paging_init() sets up the page tables, initialises the zone memory
-  * maps, and sets up the zero page, bad page and bad page tables.
-@@ -1766,7 +1779,13 @@ void __init paging_init(const struct machine_desc *mdesc)
+  * Set up the device mappings.  Since we clear out the page tables for all
+  * mappings above VMALLOC_START, except early fixmap, we might remove debug
+@@ -1383,8 +1396,14 @@ static void __init devicemaps_init(const struct machine_desc *mdesc)
+ 	 * Allocate the vector page early.
+ 	 */
+ 	vectors = early_alloc(PAGE_SIZE * 2);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: vector pages allocated\r\n");
++#endif
+ 
+ 	early_trap_init(vectors);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: early trap vectors initialized\r\n");
++#endif
+ 
+ 	/*
+ 	 * Clear page table except top pmd used by early fixmaps
+@@ -1468,9 +1487,15 @@ static void __init devicemaps_init(const struct machine_desc *mdesc)
+ 	else
+ 		debug_ll_io_init();
+ 	fill_pmd_gaps();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: static device mappings completed\r\n");
++#endif
+ 
+ 	/* Reserve fixed i/o space in VMALLOC region */
+ 	pci_reserve_io();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: PCI I/O reservation completed\r\n");
++#endif
+ 
+ 	/*
+ 	 * Finally flush the caches and tlb to ensure that we're in a
+@@ -1479,10 +1504,19 @@ static void __init devicemaps_init(const struct machine_desc *mdesc)
+ 	 * back.  After this point, we can start to touch devices again.
+ 	 */
+ 	local_flush_tlb_all();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: device-map TLB flush completed\r\n");
++#endif
+ 	flush_cache_all();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: device-map cache flush completed\r\n");
++#endif
+ 
+ 	/* Enable asynchronous aborts */
+ 	early_abt_enable();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: asynchronous aborts enabled\r\n");
++#endif
+ }
+ 
+ static void __init kmap_init(void)
+@@ -1766,7 +1800,13 @@ void __init paging_init(const struct machine_desc *mdesc)
  		 kernel_sec_start, kernel_sec_end);
  
  	prepare_page_table();
@@ -422,7 +473,7 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  	memblock_set_current_limit(arm_lowmem_limit);
  	pr_debug("lowmem limit is %08llx\n", (long long)arm_lowmem_limit);
  	/*
-@@ -1774,9 +1793,15 @@ void __init paging_init(const struct machine_desc *mdesc)
+@@ -1774,9 +1814,21 @@ void __init paging_init(const struct machine_desc *mdesc)
  	 * be used
  	 */
  	map_kernel();
@@ -430,7 +481,13 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
 +	shadow_msm_mmu_trace("Shadow-MSM: permanent kernel mappings completed\r\n");
 +#endif
  	dma_contiguous_remap();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: DMA contiguous remap completed\r\n");
++#endif
  	early_fixmap_shutdown();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_mmu_trace("Shadow-MSM: early fixmap shutdown completed\r\n");
++#endif
  	devicemaps_init(mdesc);
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
 +	shadow_msm_mmu_trace("Shadow-MSM: ARM device mappings completed\r\n");
@@ -438,7 +495,7 @@ diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
  	kmap_init();
  	tcm_init();
  
-@@ -1786,9 +1811,15 @@ void __init paging_init(const struct machine_desc *mdesc)
+@@ -1786,9 +1838,15 @@ void __init paging_init(const struct machine_desc *mdesc)
  	zero_page = early_alloc(PAGE_SIZE);
  
  	bootmem_init();

@@ -741,3 +741,30 @@ technical reference. The monitor and host loader implement no NAND operation.
 - Preserved transcript: `outputs/bl1_0.4_earlyc_boot_20260722.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-22 - permanent low and kernel mappings
+
+- GitHub Actions run
+  [`29905123406`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29905123406)
+  built commit `d0236f6` successfully after validating the patch against the
+  exact Linux v6.1 source.
+- Verified Linux Image SHA-256:
+  `1ac16f457bbeb25c55c89b5dec9180a4cabdc7d7e75bb7d26fd5e14064c83359`;
+  host CRC32: `0xB2553ED4`.
+- Target-side BL1 CRC32 was `0xBB3CD120`; target-side DTB CRC32 was
+  `0x5D395650`; all 17 embedded Image fingerprints passed.
+- Linux retained the resident monitor's single 2 MiB identity entry and
+  reached these new checkpoints:
+
+  ```text
+  Shadow-MSM: permanent table kept monitor identity map
+  Shadow-MSM: map_lowmem completed
+  Shadow-MSM: permanent kernel mappings completed
+  ```
+
+- This proves `prepare_page_table()`, `map_lowmem()`, and `map_kernel()` all
+  return on the MSM6290. The next trace separates `dma_contiguous_remap()`,
+  `early_fixmap_shutdown()`, and the internal stages of `devicemaps_init()`.
+- Preserved transcript: `outputs/bl1_0.4_pagingfix_boot_20260722.log`
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

@@ -107,6 +107,15 @@ Shadow-MSM: entering paging_init
 Shadow-MSM: permanent table kept monitor identity map
 Shadow-MSM: map_lowmem completed
 Shadow-MSM: permanent kernel mappings completed
+Shadow-MSM: DMA contiguous remap completed
+Shadow-MSM: early fixmap shutdown completed
+Shadow-MSM: vector pages allocated
+Shadow-MSM: early trap vectors initialized
+Shadow-MSM: static device mappings completed
+Shadow-MSM: PCI I/O reservation completed
+Shadow-MSM: device-map TLB flush completed
+Shadow-MSM: device-map cache flush completed
+Shadow-MSM: asynchronous aborts enabled
 Shadow-MSM: ARM device mappings completed
 Shadow-MSM: bootmem_init completed
 Shadow-MSM: leaving paging_init
