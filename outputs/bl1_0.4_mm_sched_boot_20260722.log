@@ -1,0 +1,99 @@
+K3765-Z BL1 0.4 direct Linux Image boot
+Mode  : validated non-returning Image handoff
+Flash : untouched; RAM execution only
+Input images
+Image size     : 
+0x00367770
+DTB size       : 
+0x00000225
+Host marker     : 
+0x494D4731
+Image fingerprints and DTB validation
+Image sparse fingerprints: PASS
+DTB magic      : 
+0xEDFE0DD0
+DTB total size : 
+0x00000225
+Linux entry state
+CPSR            : 
+0x200000D3
+SCTLR           : 
+0x00051078
+PC              : 
+0x00208000
+r0              : 
+0x00000000
+r1              : 
+0xFFFFFFFF
+r2              : 
+0x01F80000
+Validation PASS
+LED checkpoint  : blue
+JUMPING DIRECTLY TO DECOMPRESSED LINUX IMAGE
+Shadow-MSM: entered decompressed Linux head.S
+Shadow-MSM: ARM926 processor lookup passed
+Shadow-MSM: initial page tables created
+Shadow-MSM: calling ARM926 processor setup
+Shadow-MSM: entered ARM926 setup
+Shadow-MSM: ARM926 cache invalidate returned
+Shadow-MSM: ARM926 TLB invalidate returned
+Shadow-MSM: ARM926 control word ready
+Shadow-MSM: ARM926 setup returned; enabling MMU next
+Shadow-MSM: MMU enabled; identity execution continues
+Shadow-MSM: entered __mmap_switched at the kernel virtual address
+Shadow-MSM: __mmap_switched cleared BSS
+Shadow-MSM: branching to start_kernel
+Shadow-MSM: entered start_kernel C code
+Shadow-MSM: initial task stack is ready
+Shadow-MSM: processor ID setup completed
+Shadow-MSM: earliest generic initialization completed
+Shadow-MSM: entering ARM setup_arch
+Shadow-MSM: entered setup_arch
+Shadow-MSM: setup_processor completed
+Shadow-MSM: device-tree machine selected
+Shadow-MSM: early_mm_init completed
+Shadow-MSM: ARM memblock initialization completed
+Shadow-MSM: entering paging_init
+Shadow-MSM: low bootstrap identity mappings retained
+Shadow-MSM: map_lowmem completed
+Shadow-MSM: permanent kernel mappings completed
+Shadow-MSM: DMA contiguous remap completed
+Shadow-MSM: early fixmap shutdown completed
+Shadow-MSM: vector pages allocated
+Shadow-MSM: early trap vectors initialized
+Shadow-MSM: temporary vmalloc mappings cleared
+Shadow-MSM: static device mappings completed
+Shadow-MSM: PCI I/O reservation completed
+Shadow-MSM: device-map TLB flush completed
+Shadow-MSM: device-map cache flush completed
+Shadow-MSM: asynchronous aborts enabled
+Shadow-MSM: ARM device mappings completed
+Shadow-MSM: permanent kmap tables completed
+Shadow-MSM: TCM initialization completed
+Shadow-MSM: zero page allocated
+Shadow-MSM: bootmem_init completed
+Shadow-MSM: leaving paging_init
+Shadow-MSM: paging_init completed
+Shadow-MSM: setup_arch returned to start_kernel
+Shadow-MSM: boot configuration completed
+Shadow-MSM: command line storage completed
+Shadow-MSM: CPU ID limits completed
+Shadow-MSM: per-CPU areas completed
+Shadow-MSM: boot CPU preparation completed
+Shadow-MSM: boot CPU hotplug state completed
+Shadow-MSM: initial zone lists completed
+Shadow-MSM: page allocator initialization completed
+Shadow-MSM: entering jump-label initialization
+Shadow-MSM: jump-label initialization completed
+Shadow-MSM: early parameters parsed
+Shadow-MSM: kernel arguments parsed
+Shadow-MSM: early random initialization completed
+Shadow-MSM: kernel log buffer completed
+Shadow-MSM: early VFS caches completed
+Shadow-MSM: exception table sorting completed
+Shadow-MSM: generic trap initialization completed
+Shadow-MSM: generic memory management completed
+Shadow-MSM: function tracing initialization completed
+Shadow-MSM: early trace infrastructure completed
+Shadow-MSM: scheduler initialization completed
+Transport disconnected after handoff: GetOverlappedResult failed (PermissionError(13, 'A device attached to the system is not functioning.', None, 31))
