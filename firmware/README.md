@@ -19,3 +19,5 @@ SHA-256: 3e8339725a77d416de292ac1506cd5d4b4fedc8937bda00a4ddf0437500c6b83
 
 The firmware file is ignored by Git. Do not force-add it to a public
 repository.
+
+Although I will provide a publicly available firmware package [here.](https://rebyte.me/en/zte/95143/file-604028/)
