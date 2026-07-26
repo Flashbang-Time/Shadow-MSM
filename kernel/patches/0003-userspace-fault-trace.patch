@@ -1,0 +1,171 @@
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 20b2db6..7cdce20 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -26,6 +26,7 @@
+ #include <linux/sched/debug.h>
+ #include <linux/sched/task_stack.h>
+ #include <linux/irq.h>
++#include <linux/shadow_msm_trace.h>
+ 
+ #include <linux/atomic.h>
+ #include <asm/cacheflush.h>
+@@ -452,6 +453,15 @@ asmlinkage void do_undefinstr(struct pt_regs *regs)
+ 
+ 	pc = (void __user *)instruction_pointer(regs);
+ 
++	if (user_mode(regs)) {
++		shadow_msm_diag_trace(
++			"Shadow-MSM: PID 1 user undefined instruction\r\n");
++		shadow_msm_diag_hex("Shadow-MSM: undefined PC ",
++				    instruction_pointer(regs));
++		shadow_msm_diag_hex("Shadow-MSM: undefined CPSR ",
++				    regs->ARM_cpsr);
++	}
++
+ 	if (processor_mode(regs) == SVC_MODE) {
+ #ifdef CONFIG_THUMB2_KERNEL
+ 		if (thumb_mode(regs)) {
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index de988cb..d6dace8 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -18,6 +18,7 @@
+ #include <linux/highmem.h>
+ #include <linux/perf_event.h>
+ #include <linux/kfence.h>
++#include <linux/shadow_msm_trace.h>
+ 
+ #include <asm/system_misc.h>
+ #include <asm/system_info.h>
+@@ -554,8 +555,26 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ {
+ 	const struct fsr_info *inf = fsr_info + fsr_fs(fsr);
+ 
+-	if (!inf->fn(addr, fsr & ~FSR_LNX_PF, regs))
++	if (user_mode(regs)) {
++		shadow_msm_diag_trace(
++			"Shadow-MSM: PID 1 user data abort\r\n");
++		shadow_msm_diag_hex("Shadow-MSM: data address ", addr);
++		shadow_msm_diag_hex("Shadow-MSM: data FSR ", fsr);
++		shadow_msm_diag_hex("Shadow-MSM: data PC ",
++				    instruction_pointer(regs));
++		shadow_msm_diag_hex("Shadow-MSM: data SP ", regs->ARM_sp);
++	}
++
++	if (!inf->fn(addr, fsr & ~FSR_LNX_PF, regs)) {
++		if (user_mode(regs))
++			shadow_msm_diag_trace(
++				"Shadow-MSM: user data abort resolved\r\n");
+ 		return;
++	}
++
++	if (user_mode(regs))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: user data abort unhandled\r\n");
+ 
+ 	pr_alert("8<--- cut here ---\n");
+ 	pr_alert("Unhandled fault: %s (0x%03x) at 0x%08lx\n",
+@@ -584,8 +603,27 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+ {
+ 	const struct fsr_info *inf = ifsr_info + fsr_fs(ifsr);
+ 
+-	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs))
++	if (user_mode(regs)) {
++		shadow_msm_diag_trace(
++			"Shadow-MSM: PID 1 user prefetch abort\r\n");
++		shadow_msm_diag_hex("Shadow-MSM: prefetch address ", addr);
++		shadow_msm_diag_hex("Shadow-MSM: prefetch IFSR ", ifsr);
++		shadow_msm_diag_hex("Shadow-MSM: prefetch PC ",
++				    instruction_pointer(regs));
++		shadow_msm_diag_hex("Shadow-MSM: prefetch SP ",
++				    regs->ARM_sp);
++	}
++
++	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs)) {
++		if (user_mode(regs))
++			shadow_msm_diag_trace(
++				"Shadow-MSM: user prefetch abort resolved\r\n");
+ 		return;
++	}
++
++	if (user_mode(regs))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: user prefetch abort unhandled\r\n");
+ 
+ 	pr_alert("Unhandled prefetch abort: %s (0x%03x) at 0x%08lx\n",
+ 		inf->name, ifsr, addr);
+diff --git a/include/linux/shadow_msm_trace.h b/include/linux/shadow_msm_trace.h
+new file mode 100644
+index 0000000..af59e7d
+--- /dev/null
++++ b/include/linux/shadow_msm_trace.h
+@@ -0,0 +1,42 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++#ifndef _LINUX_SHADOW_MSM_TRACE_H
++#define _LINUX_SHADOW_MSM_TRACE_H
++
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++static inline void shadow_msm_diag_trace(const char *message)
++{
++	((void (*)(const char *))0x00816cf4UL)(message);
++}
++
++static inline void shadow_msm_diag_hex(const char *prefix,
++				       unsigned long value)
++{
++	static const char digits[] = "0123456789ABCDEF";
++	char message[64];
++	unsigned int digit;
++	unsigned int length = 0;
++
++	while (*prefix && length < sizeof(message) - 13)
++		message[length++] = *prefix++;
++	message[length++] = '0';
++	message[length++] = 'x';
++	for (digit = 0; digit < 8; digit++)
++		message[length++] =
++			digits[(value >> ((7 - digit) * 4)) & 0xf];
++	message[length++] = '\r';
++	message[length++] = '\n';
++	message[length] = '\0';
++	shadow_msm_diag_trace(message);
++}
++#else
++static inline void shadow_msm_diag_trace(const char *message)
++{
++}
++
++static inline void shadow_msm_diag_hex(const char *prefix,
++				       unsigned long value)
++{
++}
++#endif
++
++#endif
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 35e0a31..7fb39cf 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -67,6 +67,7 @@
+ #include <linux/io_uring.h>
+ #include <linux/kprobes.h>
+ #include <linux/rethook.h>
++#include <linux/shadow_msm_trace.h>
+ 
+ #include <linux/uaccess.h>
+ #include <asm/unistd.h>
+@@ -760,6 +761,13 @@ void __noreturn do_exit(long code)
+ 	struct task_struct *tsk = current;
+ 	int group_dead;
+ 
++	if (unlikely(is_global_init(tsk))) {
++		shadow_msm_diag_trace(
++			"Shadow-MSM: PID 1 entered do_exit\r\n");
++		shadow_msm_diag_hex("Shadow-MSM: PID 1 exit code ",
++				    (unsigned long)code);
++	}
++
+ 	synchronize_group_exit(tsk, code);
+ 
+ 	WARN_ON(tsk->plug);
