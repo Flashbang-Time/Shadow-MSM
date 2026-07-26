@@ -1,0 +1,7 @@
+load_address=0x00800000
+watchdog_reset=0x8000540C
+delay_iterations=0x10000
+size=36
+crc32=0x40A1F6A1
+sha256=238e7315e5a951b157c74927d6cc5ad8b885d89a297df79eb4232ce845b6139c
+nand_operations=none

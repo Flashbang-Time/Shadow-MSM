@@ -40,6 +40,7 @@
 #define SHADOW_MSM_IRQ_BANK1_CLEAR	0x04
 
 #define SHADOW_MSM_TIMER_COUNT		0x08
+#define SHADOW_MSM_WATCHDOG_RESET	0x0c
 #define SHADOW_MSM_TIMER_STATUS		0xc0
 #define SHADOW_MSM_TIMER_MATCH		0xc4
 #define SHADOW_MSM_TIMER_MIN_DELTA	6U
@@ -59,6 +60,18 @@ static int shadow_timer_linux_irq;
 static __always_inline void shadow_trace(const char *message)
 {
 	((void (*)(const char *))0x00816cf4UL)(message);
+}
+
+static __always_inline void shadow_watchdog_pet(void)
+{
+	/*
+	 * The exact stock ARMPRG main loop at 0x008141e0 writes 1 to
+	 * 0x8000540c before and after processing each command.  A RAM-only
+	 * second-stage test reproduced that write for more than 30 seconds
+	 * without reset.  The same write before timer setup and on every
+	 * clockevent keeps Linux inside the proven watchdog window.
+	 */
+	writel_relaxed(1, shadow_timer_base + SHADOW_MSM_WATCHDOG_RESET);
 }
 
 static void shadow_trace_hex(const char *prefix, unsigned long value)
@@ -291,6 +304,8 @@ static irqreturn_t shadow_timer_interrupt(int irq, void *device)
 	 * Process-context boot checkpoints provide the safe progress signal.
 	 */
 
+	shadow_watchdog_pet();
+
 	if (shadow_timer_periodic)
 		shadow_timer_program(shadow_timer_period);
 
@@ -305,6 +320,8 @@ static int __init shadow_timer_of_init(struct device_node *node)
 	shadow_timer_base = of_iomap(node, 0);
 	if (!shadow_timer_base)
 		return -ENXIO;
+
+	shadow_watchdog_pet();
 
 	shadow_timer_linux_irq = irq_of_parse_and_map(node, 0);
 	if (shadow_timer_linux_irq <= 0) {

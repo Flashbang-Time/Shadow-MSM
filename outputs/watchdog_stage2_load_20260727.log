@@ -1,0 +1,18 @@
+K3765-Z RAM stage-0 load transcript
+Host time: 2026-07-27T00:15:41
+No NAND erase/program/write operation is implemented.
+
+build\github-run-30219324982\ready-k3765-probe\armprg_stage0_monitor.bin
+  size   : 105,928
+  SHA-256: d62987d1bf6039c05b0cbf7e80ee86d47d8d00b5f154a22594c8ab30f9978dd5
+  CRC32  : E47D7226
+  address: 0x00800000
+
+outputs\k3765_watchdog_hold.bin
+  size   : 36
+  SHA-256: 238e7315e5a951b157c74927d6cc5ad8b885d89a297df79eb4232ce845b6139c
+  CRC32  : 40A1F6A1
+  address: 0x01000000
+PBL acknowledged every RAM chunk.
+Stage-0 execute command sent.
+No persistent-storage command was sent.

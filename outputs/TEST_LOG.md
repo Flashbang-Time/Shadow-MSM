@@ -1085,3 +1085,127 @@ technical reference. The monitor and host loader implement no NAND operation.
   `c1a329ed75bfb05aa36d6c6b2f765e1aa5033a931a1fe2383761160b96eddd92`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-26 - built-in PID 1 reaches `execve()`
+
+- GitHub Actions run
+  [`30218728989`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30218728989)
+  built commit `950b476` successfully.
+- The downloaded artifact ZIP SHA-256 was
+  `d15f2d38ada4ef3aae6d81881f181920fc34d03c8a4abe8467d925af47056a5c`;
+  every file matched the artifact's internal SHA-256 manifest.
+- Target-side BL1 CRC32 was `0xF3DF5918`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- Linux completed `kernel_init_freeable()` and reached:
+
+  ```text
+  Shadow-MSM: executing built-in /init
+  ```
+
+- The `/dev/shadowtrace` open checkpoint did not appear before the target
+  reset. The next build instrumented ARM userspace exception entry and PID 1
+  exit without changing storage behavior.
+- Preserved transcript:
+  `outputs/linux_pid1_trace_run_30218728989_20260726.log`.
+- Transcript SHA-256:
+  `44fcc7e5d8da1489363d5c94112d81d292b0f19cb4dd2e85acbc87a92ce70a64`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
+## 2026-07-26 - no normal userspace fault or exit path precedes reset
+
+- GitHub Actions run
+  [`30219324982`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30219324982)
+  built commit `e6bbd8d` successfully.
+- The downloaded artifact ZIP SHA-256 was
+  `21926aaedf8146d3c7de1904dfdd0ddadd872c22824ed95f272d31937361f471`;
+  every file matched the artifact's internal SHA-256 manifest.
+- Target-side BL1 CRC32 was `0xF3DF5918`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- The build traced ARM user undefined instructions, data aborts, prefetch
+  aborts, and PID 1 `do_exit()`. Linux again reached the built-in `/init`
+  execution checkpoint, but none of those fault/exit records appeared before
+  the hardware reset.
+- Preserved transcript:
+  `outputs/linux_userspace_fault_run_30219324982_20260726.log`.
+- Transcript SHA-256:
+  `dce6d93e6ec77db098264c8c07ec798b79af5ad4628f81f94d3a99632027d7fb`.
+- This eliminated the ordinary Linux userspace exception and exit handlers
+  as the immediate cause and strengthened the watchdog-deadline hypothesis.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
+## 2026-07-27 - fast userspace path still resets at the watchdog deadline
+
+- GitHub Actions run
+  [`30219883567`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30219883567)
+  built commit `093b707` successfully.
+- The artifact ZIP matched GitHub's published SHA-256 digest
+  `6c564e3ea986d56277ed0777a7d7faaaf7ef7c970df6075fba1477fcb726e40e`;
+  all 13 internal artifact hashes matched.
+- Target-side BL1 CRC32 was `0xC3EF6290`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- The build muted roughly 130 synchronous C trace calls before `/init` while
+  preserving the low-level ARM/MMU checkpoints, timer-driver records, all
+  userspace fault hooks, and `/init` output.
+- Linux reached both hardware-driver checkpoints in under one host second:
+
+  ```text
+  Shadow-MSM: MSM6290 timer IRQ route registered
+  Shadow-MSM: MSM6290 32.768-kHz clockevent registered
+  ```
+
+- The target then reset to its stock COM interfaces before `/init`. Removing
+  trace latency therefore did not remove the reset; Linux must explicitly
+  service the firmware-configured watchdog.
+- Preserved transcript:
+  `outputs/linux_fast_userspace_run_30219883567_20260727.log`.
+- Transcript SHA-256:
+  `4ab350cada2d302a29fcd37e9fb66d1d09cb8200d95b6238624c1b9920fe1916`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
+## 2026-07-27 - exact ARMPRG watchdog reset write recovered and proven
+
+- Static analysis of the exact stock `armprg.bin` identified its permanent
+  command loop at `0x008141E0`. That loop performs the following sequence:
+
+  ```text
+  write 1 to 0x8000540C
+  poll/process the USB command runtime
+  write 1 to 0x8000540C
+  repeat
+  ```
+
+- Multiple stock wait helpers also write `1` to the same register. This is an
+  exact firmware-derived sequence, not a guessed MSM-family address.
+- A 36-byte ARM payload was built with one MMIO store target:
+  `0x8000540C`. Its properties are:
+
+  ```text
+  size    36 bytes
+  CRC32   0x40A1F6A1
+  SHA256  238e7315e5a951b157c74927d6cc5ad8b885d89a297df79eb4232ce845b6139c
+  ```
+
+- Executing that payload directly from the bare PBL context reset the target.
+  This shows that ARMPRG must initialize the timer/watchdog block before the
+  reset register can be used. Preserved transcripts:
+  `outputs/watchdog_hold_bare_execute_20260727.log` and
+  `outputs/watchdog_hold_bare_port_poll_20260727.log`.
+- The same 36-byte payload was then loaded at `0x01000000` and called through
+  the fully initialized stock-sized ARMPRG monitor. Target CRC32 matched
+  `0x40A1F6A1` before execution.
+- The call remained alive for the complete 20-second capture and for a
+  subsequent 10-second port poll. `COM84` remained present throughout instead
+  of returning to the three stock interfaces. This exceeds every previously
+  observed watchdog-reset interval and proves the keepalive write.
+- Preserved transcripts:
+  `outputs/watchdog_stage2_load_20260727.log`,
+  `outputs/watchdog_stage2_hold_20260727.log`, and
+  `outputs/watchdog_stage2_postcall_poll_20260727.log`.
+- The Linux clockevent driver now performs the exact reset write immediately
+  after mapping the initialized timer block and from each periodic timer
+  interrupt.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
