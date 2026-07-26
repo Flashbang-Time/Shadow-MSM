@@ -99,7 +99,7 @@ index 9cde5a6..fbdcf5f 100644
  }
  
  static void __init do_pre_smp_initcalls(void)
-@@ -1765,30 +1821,62 @@ static int __ref kernel_init(void *unused)
+@@ -1765,30 +1821,63 @@ static int __ref kernel_init(void *unused)
  #endif
  	/* need to finish all async __init code before freeing the memory */
  	async_synchronize_full();
@@ -151,6 +151,7 @@ index 9cde5a6..fbdcf5f 100644
  
  	if (ramdisk_execute_command) {
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++		shadow_msm_c_trace_enabled = true;
 +		shadow_msm_c_trace("Shadow-MSM: executing built-in /init\r\n");
 +#endif
  		ret = run_init_process(ramdisk_execute_command);

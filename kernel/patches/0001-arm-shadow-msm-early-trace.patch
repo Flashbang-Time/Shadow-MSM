@@ -251,13 +251,23 @@ diff --git a/init/main.c b/init/main.c
 index aa21add..20a7274 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -680,18 +680,34 @@ static void __init setup_command_line(char *command_line)
+@@ -680,18 +680,44 @@ static void __init setup_command_line(char *command_line)
  
  static __initdata DECLARE_COMPLETION(kthreadd_done);
  
 +#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++/*
++ * The resident USB trace call is deliberately synchronous.  Keep the
++ * detailed C checkpoints muted during the fast-userspace diagnostic so
++ * PID 1 can run before the board's still-unserviced watchdog expires.
++ * kernel_init() enables the gate immediately before execve("/init").
++ */
++static bool shadow_msm_c_trace_enabled;
++
 +static __always_inline void shadow_msm_c_trace(const char *message)
 +{
++	if (!shadow_msm_c_trace_enabled)
++		return;
 +	((void (*)(const char *))0x00816cf4UL)(message);
 +}
 +#endif
