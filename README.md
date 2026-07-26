@@ -14,10 +14,11 @@ Qualcomm primary downloader to custom ARM code, a diagnostic stage-0 monitor,
 and a small second-stage bootloader—without modifying NAND.
 
 > [!IMPORTANT]
-> Linux is **not booting yet**. Custom ARM code, the stage-0 monitor, RGB LED
-> control, runtime hardware identification, and BL1 0.1 are verified on real
-> hardware. BL1 0.2's non-jumping Linux handoff dry run is also verified on
-> the physical target. A real Linux kernel has not yet been handed off.
+> Linux v6.1 now executes on the physical K3765-Z from a RAM-only direct
+> `Image` handoff. The probe reaches `rest_init()`, creates PID 1 and
+> `kthreadd`, and enters the first scheduler call. A usable shell is not
+> available yet. The newly added MSM6290 timer/IRQ driver builds successfully
+> and is awaiting verification on the physical target.
 
 ## Why this exists
 
@@ -69,9 +70,13 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Built BL1 0.2 Linux-handoff validation and a minimal device tree
 - [x] Verified BL1 0.2 dry run on the target
 - [x] Built and independently verified the first Linux v6.1 ARM926 probe
-- [ ] Establish an independent post-handoff UART or USB console
-- [ ] Add MSM6290 timer and interrupt-controller support
-- [ ] Reach the first Linux decompressor/kernel banner
+- [x] Handed a direct Linux `Image` and DTB to the ARM926 from RAM
+- [x] Preserved post-handoff diagnostic trace output through early kernel boot
+- [x] Reached `rest_init()`, PID 1 creation, and the first scheduler call
+- [x] Recovered the MSM6290 timer and interrupt-controller register paths
+- [x] Added a Linux v6.1 clocksource, clock-event, and IRQ-domain driver
+- [ ] Verify timer interrupts and scheduler progress on the physical target
+- [ ] Replace the diagnostic trace path with a normal UART or USB console
 - [ ] Boot a built-in BusyBox initramfs
 - [ ] Add microSD, NAND read-only, USB gadget, and display support
 
@@ -82,15 +87,15 @@ flowchart LR
     PBL["Qualcomm Boot ROM / legacy PBL"]
     S0["Shadow-MSM stage-0<br/>0x00800000"]
     BL1["Shadow-MSM BL1<br/>0x01000000"]
-    ZI["Linux zImage staging<br/>0x01200000"]
+    IMAGE["Linux direct Image<br/>0x00208000"]
     DTB["Device tree<br/>0x01F80000"]
-    LINUX["Linux<br/>probe entry: 0x00208000"]
+    LINUX["Linux v6.1<br/>ARM926 probe"]
 
     PBL -->|"RAM upload + execute"| S0
     S0 -->|"CRC + bounded call"| BL1
-    BL1 -.->|"guarded, validated handoff"| ZI
+    BL1 -->|"validated non-returning handoff"| IMAGE
     DTB -.-> BL1
-    ZI -.-> LINUX
+    IMAGE --> LINUX
 ```
 
 The stage-0 monitor is based on the initialized OEM ARM programmer runtime so
@@ -105,7 +110,6 @@ prints hardware and CP15 state, and currently returns cleanly to stage-0.
 | `0x00200000..0x007FFFFF` | Linux RAM; `Image` starts at `0x00208000` |
 | `0x00800000..0x00819DC7` | RAM-only stage-0 monitor |
 | `0x01000000` | BL1 load and entry |
-| `0x01200000..0x01EFFFFF` | zImage staging window, 13 MiB maximum |
 | `0x01F80000..0x01F8FFFF` | Reserved DTB window |
 | `0x01FFF000` | BL1 private stack top |
 | `0x02000000` | End of the 32 MiB RAM window |
@@ -226,13 +230,23 @@ entry registers, and returns `DRY1` without jumping.
 The complete commands, CRCs, and expected output are documented in
 [`outputs/BL1_0.2_DRYRUN_README.md`](outputs/BL1_0.2_DRYRUN_README.md).
 
-## First Linux probe build
+## Linux probe status
 
 The [`kernel/`](kernel/) tree contains a reproducible Linux v6.1 ARM926 probe
-build. It adds pre-MMU trace milestones for the K3765-Z, compiles a bounded
-zImage and DTB in GitHub Actions, and rejects any image that would overlap the
-resident stage-0 runtime. This probe is intended to locate the first failing
-Linux bring-up boundary; it is not yet a complete, usable kernel port.
+build. It adds pre-MMU and early-kernel trace milestones for the K3765-Z,
+compiles bounded `Image`, `zImage`, DTB, and symbol artifacts in GitHub
+Actions, and rejects any image that would overlap the resident stage-0
+runtime.
+
+The current hardware trace crosses `start_kernel()`, allocator and RCU setup,
+`rest_init()`, PID 1 creation, and `kthreadd` creation before entering the
+first scheduler call. Static analysis of the exact OEMSBL identified the
+32.768 kHz timer and its interrupt route. The corresponding Linux driver is
+now part of the reproducible build; its first physical-target run is the next
+milestone.
+
+This remains a bring-up probe rather than a complete kernel port. It has no
+userspace terminal, storage driver, general USB stack, or production console.
 
 SHA-256 values for the redistributable generated artifacts are recorded in
 [`CHECKSUMS.sha256`](CHECKSUMS.sha256).
