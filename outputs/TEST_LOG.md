@@ -1030,3 +1030,31 @@ technical reference. The monitor and host loader implement no NAND operation.
   `4d1ef58dd9522e9933f9c088b6795cb62a7316f5694dbc0109424bef45eed716`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-26 - IRQ-safe trace reaches `do_basic_setup()`
+
+- GitHub Actions run
+  [`30215675148`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30215675148)
+  built commit `459c2b2` successfully.
+- The downloaded ZIP matched GitHub's artifact digest
+  `bcaa9e5538972b5b908f5f3a74a538ae79d8fc809d6db1c5055e96fd4b66e19a`;
+  all 12 files matched the artifact's internal SHA-256 manifest.
+- Target-side BL1 CRC32 was `0x07D072A6`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- Removing the resident polling transport from hard-IRQ context fixed the
+  previous regression. Linux completed console initialization, created PID 1
+  and `kthreadd`, performed its first context switch, completed SMP,
+  workqueue, task-RCU, and late page-allocation setup, then entered
+  `do_basic_setup()`.
+- The target reset after the `do_basic_setup()` entry checkpoint and returned
+  to its normal stock diagnostic interfaces. The next build adds
+  process-context checkpoints around `cpuset_init_smp()`, `driver_init()`,
+  `init_irq_proc()`, constructors, and each initcall level. It also records
+  each initcall address before and after execution so the first non-returning
+  function can be resolved against `System.map`.
+- Preserved transcript:
+  `outputs/linux_process_trace_run_30215675148_20260726.log`.
+- Transcript SHA-256:
+  `34a74220543259ee89f798da72950251e33e622be6da91e41003b10342460655`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
