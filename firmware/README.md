@@ -42,8 +42,7 @@ The firmware file and generated OEM-derived runtime are ignored by Git. Do
 not force-add either one to a public repository. Only original Shadow-MSM
 source, documentation, hashes, maps, and user-produced test logs belong in
 the public tree.
-
-The maintainer also provides a
+I also provide a
 [public mirror of the matching firmware package](https://rebyte.me/en/zte/95143/file-604028/).
 Treat mirrors as untrusted input and verify the extracted programmer against
 the size and SHA-256 above before building.
