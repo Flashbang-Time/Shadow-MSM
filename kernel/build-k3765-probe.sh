@@ -111,6 +111,7 @@ make -C "${kernel_tree}" \
 grep -q '^CONFIG_CPU_ARM926T=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_SHADOW_MSM_EARLY_TRACE=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_AUTO_ZRELADDR=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_BLK_DEV_INITRD=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_BINFMT_ELF=y$' "${kernel_out}/.config"
 grep -Fqx \
 	"CONFIG_INITRAMFS_SOURCE=\"${initramfs_list}\"" \
