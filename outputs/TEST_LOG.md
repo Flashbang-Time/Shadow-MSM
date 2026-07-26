@@ -1005,3 +1005,28 @@ technical reference. The monitor and host loader implement no NAND operation.
   `e299964e7792803b4e5087d2553baa772ce3519742e30e79a68be296703a0ed8`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-26 - IRQ-context transport tracing rejected
+
+- GitHub Actions run
+  [`30215043071`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30215043071)
+  built commit `ecdacaf` successfully and included a BL1 paired to the exact
+  Linux Image.
+- The downloaded ZIP matched GitHub's artifact digest
+  `a07ae1b0e8d5d86c7c50145f8f6a9966bb19ff7f17a6cade2951ee035cce90e5`;
+  all 12 files matched the artifact's internal SHA-256 manifest.
+- Target-side BL1 CRC32 was `0xEB1C4AE6`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- The build attempted to emit a diagnostic string directly from the first
+  hard-IRQ handler. The transport disconnected after CPU interrupts became
+  live and before the IRQ-context string completed.
+- This is a diagnostic-path regression, not evidence against the timer/IRQ
+  route: the prior build without hard-IRQ transport calls ran PID 1 through
+  its first context switch. The fix removes all monitor transport calls from
+  hard-IRQ context while retaining detailed process-context checkpoints.
+- Preserved transcript:
+  `outputs/linux_irq_context_trace_regression_run_30215043071_20260726.log`.
+- Transcript SHA-256:
+  `4d1ef58dd9522e9933f9c088b6795cb62a7316f5694dbc0109424bef45eed716`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
