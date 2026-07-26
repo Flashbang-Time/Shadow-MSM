@@ -6,6 +6,8 @@ on:
     paths:
       - ".github/workflows/build-k3765-probe.yml"
       - "kernel/**"
+      - "work/build_linux_image_bl1.py"
+      - "requirements.txt"
 
 permissions:
   contents: read
@@ -31,7 +33,14 @@ jobs:
             gcc-arm-linux-gnueabi \
             git \
             libelf-dev \
-            libssl-dev
+            libssl-dev \
+            python3-venv
+
+      - name: Install Shadow-MSM Python build dependencies
+        run: |
+          python3 -m venv .venv
+          ./.venv/bin/python -m pip install --upgrade pip
+          ./.venv/bin/python -m pip install --requirement requirements.txt
 
       - name: Fetch official Linux v6.1
         run: |
@@ -42,6 +51,8 @@ jobs:
             linux-v6.1
 
       - name: Build and verify the RAM-only probe
+        env:
+          SHADOW_MSM_PYTHON: ${{ github.workspace }}/.venv/bin/python
         run: |
           ./kernel/build-k3765-probe.sh \
             ./linux-v6.1 \
