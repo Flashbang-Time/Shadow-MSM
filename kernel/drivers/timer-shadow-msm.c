@@ -358,6 +358,12 @@ unmap:
 TIMER_OF_DECLARE(shadow_msm6290_timer, "qcom,msm6290-shadow-timer",
 		 shadow_timer_of_init);
 
+static int shadow_trace_open(struct inode *inode, struct file *file)
+{
+	shadow_trace("Shadow-MSM: PID 1 opened /dev/shadowtrace\r\n");
+	return 0;
+}
+
 static ssize_t shadow_trace_write(struct file *file,
 				  const char __user *buffer,
 				  size_t length,
@@ -365,6 +371,8 @@ static ssize_t shadow_trace_write(struct file *file,
 {
 	char message[SHADOW_MSM_TRACE_CHUNK + 1];
 	size_t total = 0;
+
+	shadow_trace("Shadow-MSM: entered shadowtrace write syscall\r\n");
 
 	/*
 	 * The stock monitor routine expects a NUL-terminated string.  Keep each
@@ -376,6 +384,7 @@ static ssize_t shadow_trace_write(struct file *file,
 		if (copy_from_user(message, buffer, count))
 			return total ? (ssize_t)total : -EFAULT;
 		message[count] = '\0';
+		shadow_trace("Shadow-MSM: userspace trace copy completed\r\n");
 		shadow_trace(message);
 
 		buffer += count;
@@ -387,6 +396,7 @@ static ssize_t shadow_trace_write(struct file *file,
 }
 
 static const struct file_operations shadow_trace_operations = {
+	.open = shadow_trace_open,
 	.write = shadow_trace_write,
 	.llseek = no_llseek,
 };
