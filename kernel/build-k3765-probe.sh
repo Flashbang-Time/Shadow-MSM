@@ -19,18 +19,20 @@ bl1_build="${output_root}/bl1"
 mkdir -p "${kernel_out}" "${artifacts}" "${bl1_build}"
 python_cmd="${SHADOW_MSM_PYTHON:-python3}"
 
-patch_file="${repo_root}/kernel/patches/0001-arm-shadow-msm-early-trace.patch"
 config_file="${repo_root}/kernel/k3765_probe.config"
 dts_file="${repo_root}/kernel/dts/k3765-z-probe.dts"
 shadow_timer_driver="${repo_root}/kernel/drivers/timer-shadow-msm.c"
 bl1_builder="${repo_root}/work/build_linux_image_bl1.py"
 
-if git -C "${kernel_tree}" apply --reverse --check "${patch_file}" 2>/dev/null; then
-	echo "Shadow-MSM early-trace patch is already applied"
-else
-	git -C "${kernel_tree}" apply --check "${patch_file}"
-	git -C "${kernel_tree}" apply "${patch_file}"
-fi
+for patch_file in "${repo_root}"/kernel/patches/*.patch; do
+	if git -C "${kernel_tree}" apply --reverse --check \
+		"${patch_file}" 2>/dev/null; then
+		echo "$(basename "${patch_file}") is already applied"
+	else
+		git -C "${kernel_tree}" apply --check "${patch_file}"
+		git -C "${kernel_tree}" apply "${patch_file}"
+	fi
+done
 
 # Stage the device-specific RAM-only clockevent/IRQ driver into Linux v6.1.
 install -m 0644 \

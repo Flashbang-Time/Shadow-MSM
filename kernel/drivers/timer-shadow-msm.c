@@ -48,6 +48,8 @@ static DEFINE_RAW_SPINLOCK(shadow_irq_lock);
 static bool shadow_timer_periodic;
 static u32 shadow_timer_period;
 static int shadow_timer_linux_irq;
+static bool shadow_timer_first_interrupt = true;
+static bool shadow_unknown_irq_reported;
 
 static __always_inline void shadow_trace(const char *message)
 {
@@ -144,8 +146,13 @@ static void __exception_irq_entry shadow_handle_irq(struct pt_regs *regs)
 		 * not its public logical IRQ number.  Descriptor 0x1b is the
 		 * sole entry whose logical IRQ is 0x22.
 		 */
-		if (vector != SHADOW_MSM_TIMER_VECTOR)
+		if (vector != SHADOW_MSM_TIMER_VECTOR) {
+			if (!shadow_unknown_irq_reported) {
+				shadow_unknown_irq_reported = true;
+				shadow_trace("Shadow-MSM: unexpected active IRQ vector\r\n");
+			}
 			return;
+		}
 
 		generic_handle_domain_irq(shadow_irq_domain,
 					  SHADOW_MSM_TIMER_IRQ);
@@ -258,11 +265,19 @@ static struct clock_event_device shadow_clockevent = {
 static irqreturn_t shadow_timer_interrupt(int irq, void *device)
 {
 	struct clock_event_device *event = device;
+	bool first = shadow_timer_first_interrupt;
+
+	if (first) {
+		shadow_timer_first_interrupt = false;
+		shadow_trace("Shadow-MSM: first timer IRQ entered\r\n");
+	}
 
 	if (shadow_timer_periodic)
 		shadow_timer_program(shadow_timer_period);
 
 	event->event_handler(event);
+	if (first)
+		shadow_trace("Shadow-MSM: first timer IRQ completed\r\n");
 	return IRQ_HANDLED;
 }
 

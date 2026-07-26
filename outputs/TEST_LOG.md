@@ -975,3 +975,33 @@ technical reference. The monitor and host loader implement no NAND operation.
   validation of the new driver is pending.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-26 - timer/IRQ driver runs PID 1
+
+- GitHub Actions run
+  [`30212187560`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30212187560)
+  built commit `6fc1d77` successfully.
+- The first handoff used a stale BL1 and was safely rejected with
+  `BAD40003`. BL1 was rebuilt against the exact Action artifact before the
+  test was repeated.
+- Corrected target-side BL1 CRC32 was `0x287DCCC3`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- The kernel registered the recovered hardware paths:
+
+  ```text
+  Shadow-MSM: MSM6290 timer IRQ route registered
+  Shadow-MSM: MSM6290 32.768-kHz clockevent registered
+  ```
+
+- Linux enabled CPU interrupts, completed `start_kernel()`, created PID 1 and
+  `kthreadd`, performed the first context switch, ran PID 1, and entered
+  `kernel_init_freeable()`.
+- The diagnostic transport disconnected immediately after entry into
+  `kernel_init_freeable()`. The next build adds bounded checkpoints around
+  that function and the first hardware-timer interrupt.
+- Preserved transcript:
+  `outputs/linux_timer_irq_run_30212187560_corrected_20260726.log`.
+- Transcript SHA-256:
+  `e299964e7792803b4e5087d2553baa772ce3519742e30e79a68be296703a0ed8`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

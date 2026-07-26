@@ -15,10 +15,9 @@ and a small second-stage bootloader—without modifying NAND.
 
 > [!IMPORTANT]
 > Linux v6.1 now executes on the physical K3765-Z from a RAM-only direct
-> `Image` handoff. The probe reaches `rest_init()`, creates PID 1 and
-> `kthreadd`, and enters the first scheduler call. A usable shell is not
-> available yet. The newly added MSM6290 timer/IRQ driver builds successfully
-> and is awaiting verification on the physical target.
+> `Image` handoff. The MSM6290 timer/IRQ driver is now verified on physical
+> hardware: Linux completes its first context switch, runs PID 1, and enters
+> `kernel_init_freeable()`. A usable shell is not available yet.
 
 ## Why this exists
 
@@ -75,7 +74,9 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Reached `rest_init()`, PID 1 creation, and the first scheduler call
 - [x] Recovered the MSM6290 timer and interrupt-controller register paths
 - [x] Added a Linux v6.1 clocksource, clock-event, and IRQ-domain driver
-- [ ] Verify timer interrupts and scheduler progress on the physical target
+- [x] Verified timer/IRQ registration and the first PID 1 context switch
+- [x] Reached PID 1 `kernel_init_freeable()` on the physical target
+- [ ] Complete the remaining generic initcalls and enter built-in userspace
 - [ ] Replace the diagnostic trace path with a normal UART or USB console
 - [ ] Boot a built-in BusyBox initramfs
 - [ ] Add microSD, NAND read-only, USB gadget, and display support

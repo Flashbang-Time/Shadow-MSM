@@ -1,0 +1,126 @@
+diff --git a/init/main.c b/init/main.c
+index 9cde5a6..fbdcf5f 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -1847,47 +1847,113 @@ static noinline void __init kernel_init_freeable(void)
+ {
+ 	/* Now the scheduler is fully set up and can do blocking allocations */
+ 	gfp_allowed_mask = __GFP_BITS_MASK;
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: PID 1 enabled blocking allocations\r\n");
++#endif
+ 
+ 	/*
+ 	 * init can allocate pages on any node
+ 	 */
+ 	set_mems_allowed(node_states[N_MEMORY]);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: PID 1 memory policy initialized\r\n");
++#endif
+ 
+ 	cad_pid = get_pid(task_pid(current));
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: CAD PID reference captured\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering smp_prepare_cpus\r\n");
++#endif
+ 
+ 	smp_prepare_cpus(setup_max_cpus);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: smp_prepare_cpus completed\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering workqueue_init\r\n");
++#endif
+ 
+ 	workqueue_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: workqueue_init completed\r\n");
++#endif
+ 
+ 	init_mm_internals();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: memory-management internals initialized\r\n");
++#endif
+ 
+ 	rcu_init_tasks_generic();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: task RCU initialized\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering pre-SMP initcalls\r\n");
++#endif
+ 	do_pre_smp_initcalls();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: pre-SMP initcalls completed\r\n");
++#endif
+ 	lockup_detector_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: lockup detector initialized\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering smp_init\r\n");
++#endif
+ 
+ 	smp_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: smp_init completed\r\n");
++#endif
+ 	sched_init_smp();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: SMP scheduler initialized\r\n");
++#endif
+ 
+ 	padata_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: padata initialized\r\n");
++#endif
+ 	page_alloc_init_late();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: late page allocator initialized\r\n");
++#endif
+ 	/* Initialize page ext after all struct pages are initialized. */
+ 	if (!early_page_ext_enabled())
+ 		page_ext_init();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: page extensions initialized\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering do_basic_setup\r\n");
++#endif
+ 
+ 	do_basic_setup();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: do_basic_setup completed\r\n");
++#endif
+ 
+ 	kunit_run_all_tests();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: built-in KUnit phase completed\r\n");
++	shadow_msm_c_trace("Shadow-MSM: waiting for initramfs\r\n");
++#endif
+ 
+ 	wait_for_initramfs();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: initramfs wait completed\r\n");
++#endif
+ 	console_on_rootfs();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: rootfs console setup completed\r\n");
++#endif
+ 
+ 	/*
+ 	 * check if there is an early userspace init.  If yes, let it do all
+ 	 * the work
+ 	 */
+ 	if (init_eaccess(ramdisk_execute_command) != 0) {
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++		shadow_msm_c_trace("Shadow-MSM: initramfs init missing; preparing root namespace\r\n");
++#endif
+ 		ramdisk_execute_command = NULL;
+ 		prepare_namespace();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++		shadow_msm_c_trace("Shadow-MSM: root namespace prepared\r\n");
++#endif
+ 	}
+ 
+ 	/*
+@@ -1900,4 +1966,7 @@ static noinline void __init kernel_init_freeable(void)
+ 	 */
+ 
+ 	integrity_load_keys();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: integrity keys loaded\r\n");
++#endif
+ }
