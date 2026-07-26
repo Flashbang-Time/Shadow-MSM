@@ -912,3 +912,66 @@ technical reference. The monitor and host loader implement no NAND operation.
 - Preserved transcript: `outputs/bl1_0.4_delay_calibration_boot_20260722.log`
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-22 - PID 1 and kthreadd reach the first schedule
+
+- GitHub Actions run
+  [`29922459469`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/29922459469)
+  built commit `a7dbaec` successfully.
+- Verified Linux Image SHA-256:
+  `3258888ead79cdfd6a39e0bf58db35409191d818e1b7b63e3ad30b39817fdabd`;
+  host CRC32: `0xE2CEE936`.
+- Target-side BL1 CRC32 was `0xE744CAE3`; target-side DTB CRC32 was
+  `0xFFA7DAF5`.
+- The temporary fixed `lpj` value allowed Linux to complete the rest of
+  `start_kernel()`, enter `rest_init()`, start RCU, create PID 1 and
+  kthreadd, signal `kthreadd_done`, and reach the first `schedule()`.
+- The first schedule did not return because no hardware clockevent was
+  registered. This reduced the remaining scheduler blocker to one concrete
+  timer/IRQ path.
+- Preserved transcript:
+  `outputs/bl1_0.4_lpj_restinit_boot_20260722.log`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
+## 2026-07-22 - live MSM6290 timer block identified
+
+- A returning RAM probe read only MMIO and confirmed that the physical counter
+  at `0x80005408` advances.
+- The exact OEMSBL timer routine identifies:
+
+  ```text
+  counter  0x80005408
+  status   0x800054C0
+  match    0x800054C4
+  rate     32768 Hz
+  IRQ      0x22
+  ```
+
+- Two snapshots observed the count advance from `0x002DE33C` to
+  `0x002DEA88`. The probe returned cleanly to the resident monitor.
+- Preserved transcript: `outputs/timer_read_80005400_20260722.log`.
+- The probe performed no MMIO writes and no NAND operation.
+
+## 2026-07-26 - OEMSBL timer IRQ route recovered
+
+- Static analysis of the exact stock OEMSBL recovered its table-driven
+  interrupt-controller initialization.
+- Logical timer IRQ `0x22` is OEMSBL descriptor index `0x1B`, controller bank
+  1, bit `0x00000004`.
+- The exact relevant registers are:
+
+  ```text
+  active descriptor index  0x8000049C
+  bank-1 raw status         0x80000478
+  bank-1 enable mask        0x80000434
+  bank-1 acknowledge        0x80000404
+  ```
+
+- A Linux v6.1 clocksource, clockevent, and single-source IRQ-domain driver
+  was prepared from these exact values. It intentionally exposes only IRQ
+  `0x22`; all unrelated interrupt sources remain untouched.
+- This entry records static analysis and build preparation only. Hardware
+  validation of the new driver is pending.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

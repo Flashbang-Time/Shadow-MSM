@@ -720,6 +720,22 @@ index aa21add..20a7274 100644
  
  	/* Do the rest non-__init'ed, we're now alive */
  	arch_call_rest_init();
+@@ -1514,8 +1753,15 @@ static int __ref kernel_init(void *unused)
+ 	/*
+ 	 * Wait until kthreadd is all set-up.
+ 	 */
+ 	wait_for_completion(&kthreadd_done);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: PID 1 reached kernel_init\r\n");
++	shadow_msm_c_trace("Shadow-MSM: entering kernel_init_freeable\r\n");
++#endif
+ 
+ 	kernel_init_freeable();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: kernel_init_freeable completed\r\n");
++#endif
+ 	/* need to finish all async __init code before freeing the memory */
+ 	async_synchronize_full();
 diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
 index cb88c6e..8b58de7 100644
 --- a/arch/arm/kernel/setup.c

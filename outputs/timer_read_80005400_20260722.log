@@ -1,0 +1,36 @@
+K3765-Z MSM timer read probe
+Mode  : volatile RAM execution; MMIO reads only
+Flash : untouched; no NAND operation is implemented
+OEMSBL timer base: 0x80005400
+Snapshot A
+  0x80005400: 
+0x00000000
+  0x80005404: 
+0x00000000
+  0x80005408: 
+0x002DE33C
+  0x80005410: 
+0x00000000
+  0x80005414: 
+0x00000000
+  0x80005418: 
+0x00000015
+  0x80005434: 
+0x00000000
+Snapshot B after bounded busy delay
+  0x80005400: 
+0x00000000
+  0x80005404: 
+0x00000000
+  0x80005408: 
+0x002DEA88
+  0x80005410: 
+0x00000000
+  0x80005414: 
+0x00000000
+  0x80005418: 
+0x00000015
+  0x80005434: 
+0x00000000
+Timer candidate reads completed; returning TMR1
+RETURN R0: 0x544D5231

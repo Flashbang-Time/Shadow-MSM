@@ -20,12 +20,23 @@ mkdir -p "${kernel_out}" "${artifacts}"
 patch_file="${repo_root}/kernel/patches/0001-arm-shadow-msm-early-trace.patch"
 config_file="${repo_root}/kernel/k3765_probe.config"
 dts_file="${repo_root}/kernel/dts/k3765-z-probe.dts"
+shadow_timer_driver="${repo_root}/kernel/drivers/timer-shadow-msm.c"
 
 if git -C "${kernel_tree}" apply --reverse --check "${patch_file}" 2>/dev/null; then
 	echo "Shadow-MSM early-trace patch is already applied"
 else
 	git -C "${kernel_tree}" apply --check "${patch_file}"
 	git -C "${kernel_tree}" apply "${patch_file}"
+fi
+
+# Stage the device-specific RAM-only clockevent/IRQ driver into Linux v6.1.
+install -m 0644 \
+	"${shadow_timer_driver}" \
+	"${kernel_tree}/drivers/clocksource/timer-shadow-msm.c"
+if ! grep -q 'timer-shadow-msm.o' \
+	"${kernel_tree}/drivers/clocksource/Makefile"; then
+	printf '\nobj-$(CONFIG_SHADOW_MSM_EARLY_TRACE) += timer-shadow-msm.o\n' \
+		>> "${kernel_tree}/drivers/clocksource/Makefile"
 fi
 
 make -C "${kernel_tree}" \

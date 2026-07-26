@@ -44,4 +44,18 @@
 			reg = <0>;
 		};
 	};
+
+	shadow_intc: interrupt-controller@80000400 {
+		compatible = "qcom,msm6290-shadow-irq";
+		reg = <0x80000400 0x00001000>;
+		interrupt-controller;
+		#interrupt-cells = <1>;
+	};
+
+	timer@80005400 {
+		compatible = "qcom,msm6290-shadow-timer";
+		reg = <0x80005400 0x00001000>;
+		interrupt-parent = <&shadow_intc>;
+		interrupts = <0x22>;
+	};
 };
