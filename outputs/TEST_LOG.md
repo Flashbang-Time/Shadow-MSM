@@ -1058,3 +1058,30 @@ technical reference. The monitor and host loader implement no NAND operation.
   `34a74220543259ee89f798da72950251e33e622be6da91e41003b10342460655`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-26 - every initcall and `kernel_init_freeable()` completes
+
+- GitHub Actions run
+  [`30217072732`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30217072732)
+  built commit `8369acb` successfully.
+- The downloaded ZIP matched GitHub's artifact digest
+  `4d40f9416e0a8ddc08248e434e3c1c9cd8e24e9d9a0d1ecde1ef7b4da5c8b879`;
+  all 12 files matched the artifact's internal SHA-256 manifest.
+- Target-side BL1 CRC32 was `0xE59DAE99`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- Linux completed every initcall level from 0 through 7. Every traced
+  initcall emitted both its begin and end record.
+- The kernel then completed `do_basic_setup()`, its KUnit phase, initramfs
+  wait, rootfs console setup, root-namespace preparation, integrity-key
+  loading, and all of `kernel_init_freeable()`.
+- This proves the earlier apparent stall at `do_basic_setup()` was a
+  timing/watchdog symptom rather than a non-returning initcall. The next
+  RAM-only build embeds a freestanding `/init`, enables the ELF loader, and
+  adds a process-context `/dev/shadowtrace` bridge so PID 1 can report its
+  system identity and a one-second heartbeat.
+- Preserved transcript:
+  `outputs/linux_initcall_trace_run_30217072732_20260726.log`.
+- Transcript SHA-256:
+  `c1a329ed75bfb05aa36d6c6b2f765e1aa5033a931a1fe2383761160b96eddd92`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

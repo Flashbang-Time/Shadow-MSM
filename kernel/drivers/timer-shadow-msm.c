@@ -11,16 +11,20 @@
 #include <linux/bitops.h>
 #include <linux/clockchips.h>
 #include <linux/clocksource.h>
+#include <linux/fs.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/irq.h>
 #include <linux/irqchip.h>
 #include <linux/irqdomain.h>
+#include <linux/minmax.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/sched_clock.h>
+#include <linux/uaccess.h>
 
+#include <asm/cputype.h>
 #include <asm/exception.h>
 #include <asm/irq.h>
 
@@ -40,6 +44,9 @@
 #define SHADOW_MSM_TIMER_MATCH		0xc4
 #define SHADOW_MSM_TIMER_MIN_DELTA	6U
 
+#define SHADOW_MSM_TRACE_MAJOR		240
+#define SHADOW_MSM_TRACE_CHUNK		96U
+
 static void __iomem *shadow_irq_base;
 static void __iomem *shadow_timer_base;
 static struct irq_domain *shadow_irq_domain;
@@ -52,6 +59,25 @@ static int shadow_timer_linux_irq;
 static __always_inline void shadow_trace(const char *message)
 {
 	((void (*)(const char *))0x00816cf4UL)(message);
+}
+
+static void shadow_trace_hex(const char *prefix, unsigned long value)
+{
+	static const char digits[] = "0123456789ABCDEF";
+	char message[64];
+	unsigned int digit;
+	unsigned int length = 0;
+
+	while (*prefix && length < sizeof(message) - 13)
+		message[length++] = *prefix++;
+	message[length++] = '0';
+	message[length++] = 'x';
+	for (digit = 0; digit < 8; digit++)
+		message[length++] = digits[(value >> ((7 - digit) * 4)) & 0xf];
+	message[length++] = '\r';
+	message[length++] = '\n';
+	message[length] = '\0';
+	shadow_trace(message);
 }
 
 static u32 shadow_timer_read_count(void)
@@ -331,3 +357,58 @@ unmap:
 }
 TIMER_OF_DECLARE(shadow_msm6290_timer, "qcom,msm6290-shadow-timer",
 		 shadow_timer_of_init);
+
+static ssize_t shadow_trace_write(struct file *file,
+				  const char __user *buffer,
+				  size_t length,
+				  loff_t *position)
+{
+	char message[SHADOW_MSM_TRACE_CHUNK + 1];
+	size_t total = 0;
+
+	/*
+	 * The stock monitor routine expects a NUL-terminated string.  Keep each
+	 * copy bounded and invoke it only from this userspace process context.
+	 */
+	while (length) {
+		size_t count = min_t(size_t, length, SHADOW_MSM_TRACE_CHUNK);
+
+		if (copy_from_user(message, buffer, count))
+			return total ? (ssize_t)total : -EFAULT;
+		message[count] = '\0';
+		shadow_trace(message);
+
+		buffer += count;
+		length -= count;
+		total += count;
+	}
+
+	return total;
+}
+
+static const struct file_operations shadow_trace_operations = {
+	.write = shadow_trace_write,
+	.llseek = no_llseek,
+};
+
+static int __init shadow_trace_device_init(void)
+{
+	int result;
+
+	result = register_chrdev(
+		SHADOW_MSM_TRACE_MAJOR,
+		"shadowtrace",
+		&shadow_trace_operations);
+	if (result < 0)
+		return result;
+
+	shadow_trace(
+		"Shadow-MSM: /dev/shadowtrace process bridge registered\r\n");
+	shadow_trace(
+		"Shadow-MSM: hardware ZTE K3765-Z / Qualcomm MSM6290\r\n");
+	shadow_trace_hex("Shadow-MSM: CPU MIDR ", read_cpuid_id());
+	shadow_trace(
+		"Shadow-MSM: physical RAM window 0x00000000-0x01FFFFFF\r\n");
+	return 0;
+}
+device_initcall(shadow_trace_device_init);

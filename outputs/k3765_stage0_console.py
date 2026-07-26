@@ -280,17 +280,44 @@ def call_stage2(port, address, r0, r1, r2, on_message=None):
     return int(command(port, 0x0D, args, on_message=on_message), 16)
 
 
-def follow_linux(port, address, r0, r1, r2, on_message, idle_timeout):
+def follow_linux(
+    port,
+    address,
+    r0,
+    r1,
+    r2,
+    on_message,
+    idle_timeout,
+    max_runtime,
+):
     request = stage2_request(port, address, r0, r1, r2)
     port.reset_input_buffer()
     port.write(request)
     port.flush()
-    idle_deadline = time.monotonic() + idle_timeout
-    while time.monotonic() < idle_deadline:
+    start = time.monotonic()
+    idle_deadline = start + idle_timeout
+    absolute_deadline = (
+        start + max_runtime if max_runtime > 0 else float("inf")
+    )
+    while True:
+        now = time.monotonic()
+        if now >= absolute_deadline:
+            on_message(
+                f"Maximum capture runtime of {max_runtime:g} seconds reached; "
+                "target left running."
+            )
+            return None
+        if now >= idle_deadline:
+            on_message(f"No new target frame for {idle_timeout:g} seconds.")
+            return None
         try:
             payload = read_frame(
                 port,
-                timeout=min(1.0, idle_deadline - time.monotonic()),
+                timeout=min(
+                    1.0,
+                    idle_deadline - now,
+                    absolute_deadline - now,
+                ),
             )
         except (OSError, serial.SerialException) as error:
             on_message(f"Transport disconnected after handoff: {error}")
@@ -302,8 +329,6 @@ def follow_linux(port, address, r0, r1, r2, on_message, idle_timeout):
         idle_deadline = time.monotonic() + idle_timeout
         if re.fullmatch(r"[0-9A-Fa-f]{8}", text):
             return int(text, 16)
-    on_message(f"No new target frame for {idle_timeout:g} seconds.")
-    return None
 
 
 def parse_int(text):
@@ -335,6 +360,15 @@ def main():
         type=float,
         default=20.0,
         help="seconds without a target frame before linux mode stops",
+    )
+    parser.add_argument(
+        "--max-runtime",
+        type=float,
+        default=0.0,
+        help=(
+            "maximum linux log-capture time in seconds; "
+            "zero keeps capturing until idle"
+        ),
     )
     parser.add_argument(
         "--chunk-size",
@@ -385,6 +419,7 @@ def main():
                         *values,
                         on_message=emit_stage2,
                         idle_timeout=args.idle_timeout,
+                        max_runtime=args.max_runtime,
                     )
                     if result is not None:
                         emit_stage2(f"UNEXPECTED RETURN R0: 0x{result:08X}")

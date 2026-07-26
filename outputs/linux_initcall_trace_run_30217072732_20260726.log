@@ -1,0 +1,710 @@
+K3765-Z BL1 0.4 direct Linux Image boot
+Mode  : validated non-returning Image handoff
+Flash : untouched; RAM execution only
+Input images
+Image size     : 
+0x00367930
+DTB size       : 
+0x0000037B
+Host marker     : 
+0x494D4731
+Image fingerprints and DTB validation
+Image sparse fingerprints: PASS
+DTB magic      : 
+0xEDFE0DD0
+DTB total size : 
+0x0000037B
+Linux entry state
+CPSR            : 
+0x200000D3
+SCTLR           : 
+0x00051078
+PC              : 
+0x00208000
+r0              : 
+0x00000000
+r1              : 
+0xFFFFFFFF
+r2              : 
+0x01F80000
+Validation PASS
+LED checkpoint  : blue
+JUMPING DIRECTLY TO DECOMPRESSED LINUX IMAGE
+Shadow-MSM: entered decompressed Linux head.S
+Shadow-MSM: ARM926 processor lookup passed
+Shadow-MSM: initial page tables created
+Shadow-MSM: calling ARM926 processor setup
+Shadow-MSM: entered ARM926 setup
+Shadow-MSM: ARM926 cache invalidate returned
+Shadow-MSM: ARM926 TLB invalidate returned
+Shadow-MSM: ARM926 control word ready
+Shadow-MSM: ARM926 setup returned; enabling MMU next
+Shadow-MSM: MMU enabled; identity execution continues
+Shadow-MSM: entered __mmap_switched at the kernel virtual address
+Shadow-MSM: __mmap_switched cleared BSS
+Shadow-MSM: branching to start_kernel
+Shadow-MSM: entered start_kernel C code
+Shadow-MSM: initial task stack is ready
+Shadow-MSM: processor ID setup completed
+Shadow-MSM: earliest generic initialization completed
+Shadow-MSM: entering ARM setup_arch
+Shadow-MSM: entered setup_arch
+Shadow-MSM: setup_processor completed
+Shadow-MSM: device-tree machine selected
+Shadow-MSM: early_mm_init completed
+Shadow-MSM: ARM memblock initialization completed
+Shadow-MSM: entering paging_init
+Shadow-MSM: low bootstrap identity mappings retained
+Shadow-MSM: map_lowmem completed
+Shadow-MSM: permanent kernel mappings completed
+Shadow-MSM: DMA contiguous remap completed
+Shadow-MSM: early fixmap shutdown completed
+Shadow-MSM: vector pages allocated
+Shadow-MSM: early trap vectors initialized
+Shadow-MSM: temporary vmalloc mappings cleared
+Shadow-MSM: static device mappings completed
+Shadow-MSM: PCI I/O reservation completed
+Shadow-MSM: device-map TLB flush completed
+Shadow-MSM: device-map cache flush completed
+Shadow-MSM: asynchronous aborts enabled
+Shadow-MSM: ARM device mappings completed
+Shadow-MSM: permanent kmap tables completed
+Shadow-MSM: TCM initialization completed
+Shadow-MSM: zero page allocated
+Shadow-MSM: bootmem_init completed
+Shadow-MSM: leaving paging_init
+Shadow-MSM: paging_init completed
+Shadow-MSM: setup_arch returned to start_kernel
+Shadow-MSM: boot configuration completed
+Shadow-MSM: command line storage completed
+Shadow-MSM: CPU ID limits completed
+Shadow-MSM: per-CPU areas completed
+Shadow-MSM: boot CPU preparation completed
+Shadow-MSM: boot CPU hotplug state completed
+Shadow-MSM: initial zone lists completed
+Shadow-MSM: page allocator initialization completed
+Shadow-MSM: entering jump-label initialization
+Shadow-MSM: jump-label initialization completed
+Shadow-MSM: early parameters parsed
+Shadow-MSM: kernel arguments parsed
+Shadow-MSM: early random initialization completed
+Shadow-MSM: kernel log buffer completed
+Shadow-MSM: early VFS caches completed
+Shadow-MSM: exception table sorting completed
+Shadow-MSM: generic trap initialization completed
+Shadow-MSM: generic memory management completed
+Shadow-MSM: function tracing initialization completed
+Shadow-MSM: early trace infrastructure completed
+Shadow-MSM: scheduler initialization completed
+Shadow-MSM: radix tree initialization completed
+Shadow-MSM: maple tree initialization completed
+Shadow-MSM: housekeeping initialization completed
+Shadow-MSM: early workqueue initialization completed
+Shadow-MSM: RCU initialization completed
+Shadow-MSM: trace event initialization completed
+Shadow-MSM: context tracking initialization completed
+Shadow-MSM: early IRQ initialization completed
+Shadow-MSM: entering platform IRQ initialization
+Shadow-MSM: MSM6290 timer IRQ route registered
+Shadow-MSM: platform IRQ initialization completed
+Shadow-MSM: tick initialization completed
+Shadow-MSM: no-HZ RCU initialization completed
+Shadow-MSM: timer core initialization completed
+Shadow-MSM: SRCU initialization completed
+Shadow-MSM: high-resolution timer initialization completed
+Shadow-MSM: softirq initialization completed
+Shadow-MSM: timekeeping initialization completed
+Shadow-MSM: entering platform time initialization
+Shadow-MSM: MSM6290 32.768-kHz clockevent registered
+Shadow-MSM: platform time initialization completed
+Shadow-MSM: random subsystem initialization completed
+Shadow-MSM: KFENCE initialization completed
+Shadow-MSM: boot stack canary initialized
+Shadow-MSM: performance events initialized
+Shadow-MSM: profiling initialized
+Shadow-MSM: cross-CPU call infrastructure initialized
+Shadow-MSM: enabling CPU interrupts
+Shadow-MSM: CPU interrupts enabled
+Shadow-MSM: late slab initialization completed
+Shadow-MSM: entering console initialization
+Shadow-MSM: console initialization completed
+Shadow-MSM: lock dependency initialization completed
+Shadow-MSM: locking self-test completed
+Shadow-MSM: memory encryption hook completed
+Shadow-MSM: per-CPU page sets initialized
+Shadow-MSM: NUMA policy initialization completed
+Shadow-MSM: early ACPI hook completed
+Shadow-MSM: late platform time hook completed
+Shadow-MSM: scheduler clock initialization completed
+Shadow-MSM: entering delay-loop calibration
+Shadow-MSM: delay-loop calibration completed
+Shadow-MSM: PID and anonymous VMA initialization completed
+Shadow-MSM: task and process caches initialized
+Shadow-MSM: namespace, key, and security initialization completed
+Shadow-MSM: VFS, page cache, signal, and seq-file initialization completed
+Shadow-MSM: proc, namespace FS, cpuset, and cgroup initialization completed
+Shadow-MSM: late generic initialization completed
+Shadow-MSM: entering arch_call_rest_init
+Shadow-MSM: entered rest_init
+Shadow-MSM: RCU scheduler started
+Shadow-MSM: PID 1 task created
+Shadow-MSM: kthreadd task created
+Shadow-MSM: kthreadd completion signalled
+Shadow-MSM: entering first schedule
+Shadow-MSM: PID 1 reached kernel_init
+Shadow-MSM: entering kernel_init_freeable
+Shadow-MSM: PID 1 enabled blocking allocations
+Shadow-MSM: PID 1 memory policy initialized
+Shadow-MSM: CAD PID reference captured
+Shadow-MSM: entering smp_prepare_cpus
+Shadow-MSM: smp_prepare_cpus completed
+Shadow-MSM: entering workqueue_init
+Shadow-MSM: workqueue_init completed
+Shadow-MSM: memory-management internals initialized
+Shadow-MSM: task RCU initialized
+Shadow-MSM: entering pre-SMP initcalls
+Shadow-MSM: initcall begin 0xC031F344
+Shadow-MSM: initcall end 0xC031F344
+Shadow-MSM: initcall begin 0xC000CF70
+Shadow-MSM: initcall end 0xC000CF70
+Shadow-MSM: initcall begin 0xC03202A8
+Shadow-MSM: initcall end 0xC03202A8
+Shadow-MSM: initcall begin 0xC032220C
+Shadow-MSM: initcall end 0xC032220C
+Shadow-MSM: initcall begin 0xC0325604
+Shadow-MSM: initcall end 0xC0325604
+Shadow-MSM: initcall begin 0xC0326C78
+Shadow-MSM: initcall end 0xC0326C78
+Shadow-MSM: initcall begin 0xC032AB40
+Shadow-MSM: initcall end 0xC032AB40
+Shadow-MSM: initcall begin 0xC032BD60
+Shadow-MSM: initcall end 0xC032BD60
+Shadow-MSM: pre-SMP initcalls completed
+Shadow-MSM: lockup detector initialized
+Shadow-MSM: entering smp_init
+Shadow-MSM: smp_init completed
+Shadow-MSM: SMP scheduler initialized
+Shadow-MSM: padata initialized
+Shadow-MSM: late page allocator initialized
+Shadow-MSM: page extensions initialized
+Shadow-MSM: entering do_basic_setup
+Shadow-MSM: entering cpuset_init_smp
+Shadow-MSM: cpuset_init_smp completed
+Shadow-MSM: entering driver_init
+Shadow-MSM: driver_init completed
+Shadow-MSM: entering init_irq_proc
+Shadow-MSM: init_irq_proc completed
+Shadow-MSM: entering constructors
+Shadow-MSM: constructors completed
+Shadow-MSM: entering initcalls
+Shadow-MSM: initcall level begin 0x00000000
+Shadow-MSM: initcall begin 0xC032C914
+Shadow-MSM: initcall end 0xC032C914
+Shadow-MSM: initcall level end 0x00000000
+Shadow-MSM: initcall level begin 0x00000001
+Shadow-MSM: initcall begin 0xC031E5D4
+Shadow-MSM: initcall end 0xC031E5D4
+Shadow-MSM: initcall begin 0xC0322804
+Shadow-MSM: initcall end 0xC0322804
+Shadow-MSM: initcall begin 0xC0323150
+Shadow-MSM: initcall end 0xC0323150
+Shadow-MSM: initcall begin 0xC03239FC
+Shadow-MSM: initcall end 0xC03239FC
+Shadow-MSM: initcall begin 0xC03246F4
+Shadow-MSM: initcall end 0xC03246F4
+Shadow-MSM: initcall begin 0xC0324FA8
+Shadow-MSM: initcall end 0xC0324FA8
+Shadow-MSM: initcall begin 0xC0325458
+Shadow-MSM: initcall end 0xC0325458
+Shadow-MSM: initcall begin 0xC0060D6C
+Shadow-MSM: initcall end 0xC0060D6C
+Shadow-MSM: initcall begin 0xC032A1E0
+Shadow-MSM: initcall end 0xC032A1E0
+Shadow-MSM: initcall begin 0xC032B95C
+Shadow-MSM: initcall end 0xC032B95C
+Shadow-MSM: initcall begin 0xC032BDC4
+Shadow-MSM: initcall end 0xC032BDC4
+Shadow-MSM: initcall begin 0xC032BE38
+Shadow-MSM: initcall end 0xC032BE38
+Shadow-MSM: initcall begin 0xC032C544
+Shadow-MSM: initcall end 0xC032C544
+Shadow-MSM: initcall begin 0xC032C730
+Shadow-MSM: initcall end 0xC032C730
+Shadow-MSM: initcall begin 0xC032D11C
+Shadow-MSM: initcall end 0xC032D11C
+Shadow-MSM: initcall begin 0xC032D1FC
+Shadow-MSM: initcall end 0xC032D1FC
+Shadow-MSM: initcall begin 0xC01B5C80
+Shadow-MSM: initcall end 0xC01B5C80
+Shadow-MSM: initcall begin 0xC032DE0C
+Shadow-MSM: initcall end 0xC032DE0C
+Shadow-MSM: initcall begin 0xC032FAFC
+Shadow-MSM: initcall end 0xC032FAFC
+Shadow-MSM: initcall begin 0xC0330B88
+Shadow-MSM: initcall end 0xC0330B88
+Shadow-MSM: initcall begin 0xC0330C04
+Shadow-MSM: initcall end 0xC0330C04
+Shadow-MSM: initcall begin 0xC0330C10
+Shadow-MSM: initcall end 0xC0330C10
+Shadow-MSM: initcall begin 0xC0330C1C
+Shadow-MSM: initcall end 0xC0330C1C
+Shadow-MSM: initcall level end 0x00000001
+Shadow-MSM: initcall level begin 0x00000002
+Shadow-MSM: initcall begin 0xC031FE24
+Shadow-MSM: initcall end 0xC031FE24
+Shadow-MSM: initcall begin 0xC0324410
+Shadow-MSM: initcall end 0xC0324410
+Shadow-MSM: initcall begin 0xC0325B9C
+Shadow-MSM: initcall end 0xC0325B9C
+Shadow-MSM: initcall begin 0xC0325C44
+Shadow-MSM: initcall end 0xC0325C44
+Shadow-MSM: initcall begin 0xC0333DEC
+Shadow-MSM: initcall end 0xC0333DEC
+Shadow-MSM: initcall begin 0xC032CF20
+Shadow-MSM: initcall end 0xC032CF20
+Shadow-MSM: initcall begin 0xC032D390
+Shadow-MSM: initcall end 0xC032D390
+Shadow-MSM: initcall begin 0xC032D3E8
+Shadow-MSM: initcall end 0xC032D3E8
+Shadow-MSM: initcall begin 0xC032DF5C
+Shadow-MSM: initcall end 0xC032DF5C
+Shadow-MSM: initcall begin 0xC032E6C0
+Shadow-MSM: initcall end 0xC032E6C0
+Shadow-MSM: initcall begin 0xC032FB24
+Shadow-MSM: initcall end 0xC032FB24
+Shadow-MSM: initcall begin 0xC0330144
+Shadow-MSM: initcall end 0xC0330144
+Shadow-MSM: initcall begin 0xC03303F4
+Shadow-MSM: initcall end 0xC03303F4
+Shadow-MSM: initcall begin 0xC0330428
+Shadow-MSM: initcall end 0xC0330428
+Shadow-MSM: initcall begin 0xC0330510
+Shadow-MSM: initcall end 0xC0330510
+Shadow-MSM: initcall begin 0xC0330520
+Shadow-MSM: initcall end 0xC0330520
+Shadow-MSM: initcall begin 0xC0330540
+Shadow-MSM: initcall end 0xC0330540
+Shadow-MSM: initcall begin 0xC0330968
+Shadow-MSM: initcall end 0xC0330968
+Shadow-MSM: initcall begin 0xC0330C48
+Shadow-MSM: initcall end 0xC0330C48
+Shadow-MSM: initcall begin 0xC0330C5C
+Shadow-MSM: initcall end 0xC0330C5C
+Shadow-MSM: initcall level end 0x00000002
+Shadow-MSM: initcall level begin 0x00000003
+Shadow-MSM: initcall begin 0xC031E568
+Shadow-MSM: initcall end 0xC031E568
+Shadow-MSM: initcall begin 0xC031E600
+Shadow-MSM: initcall end 0xC031E600
+Shadow-MSM: initcall begin 0xC031FB4C
+Shadow-MSM: initcall end 0xC031FB4C
+Shadow-MSM: initcall begin 0xC0324B20
+Shadow-MSM: initcall end 0xC0324B20
+Shadow-MSM: initcall begin 0xC032CAC4
+Shadow-MSM: initcall end 0xC032CAC4
+Shadow-MSM: initcall begin 0xC03315A4
+Shadow-MSM: initcall end 0xC03315A4
+Shadow-MSM: initcall level end 0x00000003
+Shadow-MSM: initcall level begin 0x00000004
+Shadow-MSM: initcall begin 0xC031E630
+Shadow-MSM: initcall end 0xC031E630
+Shadow-MSM: initcall begin 0xC0322708
+Shadow-MSM: initcall end 0xC0322708
+Shadow-MSM: initcall begin 0xC0322D70
+Shadow-MSM: initcall end 0xC0322D70
+Shadow-MSM: initcall begin 0xC0323408
+Shadow-MSM: initcall end 0xC0323408
+Shadow-MSM: initcall begin 0xC0323AE4
+Shadow-MSM: initcall end 0xC0323AE4
+Shadow-MSM: initcall begin 0xC03258C4
+Shadow-MSM: initcall end 0xC03258C4
+Shadow-MSM: initcall begin 0xC0325BEC
+Shadow-MSM: initcall end 0xC0325BEC
+Shadow-MSM: initcall begin 0xC0325E5C
+Shadow-MSM: initcall end 0xC0325E5C
+Shadow-MSM: initcall begin 0xC0326B6C
+Shadow-MSM: initcall end 0xC0326B6C
+Shadow-MSM: initcall begin 0xC0333A30
+Shadow-MSM: initcall end 0xC0333A30
+Shadow-MSM: initcall begin 0xC00964C4
+Shadow-MSM: initcall end 0xC00964C4
+Shadow-MSM: initcall begin 0xC0096494
+Shadow-MSM: initcall end 0xC0096494
+Shadow-MSM: initcall begin 0xC032CA88
+Shadow-MSM: initcall end 0xC032CA88
+Shadow-MSM: initcall begin 0xC032CAD0
+Shadow-MSM: initcall end 0xC032CAD0
+Shadow-MSM: initcall begin 0xC032CADC
+Shadow-MSM: initcall end 0xC032CADC
+Shadow-MSM: initcall begin 0xC032CB40
+Shadow-MSM: initcall end 0xC032CB40
+Shadow-MSM: initcall begin 0xC032CB50
+Shadow-MSM: initcall end 0xC032CB50
+Shadow-MSM: initcall begin 0xC032CB5C
+Shadow-MSM: initcall end 0xC032CB5C
+Shadow-MSM: initcall begin 0xC032CB68
+Shadow-MSM: initcall end 0xC032CB68
+Shadow-MSM: initcall begin 0xC032CB78
+Shadow-MSM: initcall end 0xC032CB78
+Shadow-MSM: initcall begin 0xC032CBD8
+Shadow-MSM: initcall end 0xC032CBD8
+Shadow-MSM: initcall begin 0xC032CBE8
+Shadow-MSM: initcall end 0xC032CBE8
+Shadow-MSM: initcall begin 0xC032CBF4
+Shadow-MSM: initcall end 0xC032CBF4
+Shadow-MSM: initcall begin 0xC032CC34
+Shadow-MSM: initcall end 0xC032CC34
+Shadow-MSM: initcall begin 0xC032CC40
+Shadow-MSM: initcall end 0xC032CC40
+Shadow-MSM: initcall begin 0xC032CC7C
+Shadow-MSM: initcall end 0xC032CC7C
+Shadow-MSM: initcall begin 0xC032CCB8
+Shadow-MSM: initcall end 0xC032CCB8
+Shadow-MSM: initcall begin 0xC032CCC4
+Shadow-MSM: initcall end 0xC032CCC4
+Shadow-MSM: initcall begin 0xC032CE98
+Shadow-MSM: initcall end 0xC032CE98
+Shadow-MSM: initcall begin 0xC032D2F0
+Shadow-MSM: initcall end 0xC032D2F0
+Shadow-MSM: initcall begin 0xC032D324
+Shadow-MSM: initcall end 0xC032D324
+Shadow-MSM: initcall begin 0xC032D35C
+Shadow-MSM: initcall end 0xC032D35C
+Shadow-MSM: initcall begin 0xC032DF3C
+Shadow-MSM: initcall end 0xC032DF3C
+Shadow-MSM: initcall begin 0xC032F990
+Shadow-MSM: initcall end 0xC032F990
+Shadow-MSM: initcall begin 0xC0330550
+Shadow-MSM: initcall end 0xC0330550
+Shadow-MSM: initcall begin 0xC03305F8
+Shadow-MSM: initcall end 0xC03305F8
+Shadow-MSM: initcall begin 0xC0330654
+Shadow-MSM: initcall end 0xC0330654
+Shadow-MSM: initcall begin 0xC0330780
+Shadow-MSM: initcall end 0xC0330780
+Shadow-MSM: initcall begin 0xC03308EC
+Shadow-MSM: initcall end 0xC03308EC
+Shadow-MSM: initcall begin 0xC0330934
+Shadow-MSM: initcall end 0xC0330934
+Shadow-MSM: initcall begin 0xC0244048
+Shadow-MSM: initcall end 0xC0244048
+Shadow-MSM: initcall begin 0xC03336AC
+Shadow-MSM: initcall end 0xC03336AC
+Shadow-MSM: initcall begin 0xC0333A1C
+Shadow-MSM: initcall end 0xC0333A1C
+Shadow-MSM: initcall begin 0xC0330A54
+Shadow-MSM: initcall end 0xC0330A54
+Shadow-MSM: initcall level end 0x00000004
+Shadow-MSM: initcall level begin 0x00000005
+Shadow-MSM: initcall begin 0xC031E654
+Shadow-MSM: initcall end 0xC031E654
+Shadow-MSM: initcall begin 0xC0321BB0
+Shadow-MSM: initcall end 0xC0321BB0
+Shadow-MSM: initcall begin 0xC0322308
+Shadow-MSM: initcall end 0xC0322308
+Shadow-MSM: initcall begin 0xC0324F64
+Shadow-MSM: initcall end 0xC0324F64
+Shadow-MSM: initcall begin 0xC032A7F0
+Shadow-MSM: initcall end 0xC032A7F0
+Shadow-MSM: initcall begin 0xC032A8E8
+Shadow-MSM: initcall end 0xC032A8E8
+Shadow-MSM: initcall begin 0xC032A910
+Shadow-MSM: initcall end 0xC032A910
+Shadow-MSM: initcall begin 0xC032A974
+Shadow-MSM: initcall end 0xC032A974
+Shadow-MSM: initcall begin 0xC032A9D8
+Shadow-MSM: initcall end 0xC032A9D8
+Shadow-MSM: initcall begin 0xC032AD64
+Shadow-MSM: initcall end 0xC032AD64
+Shadow-MSM: initcall begin 0xC032BA54
+Shadow-MSM: initcall end 0xC032BA54
+Shadow-MSM: initcall begin 0xC032BB4C
+Shadow-MSM: initcall end 0xC032BB4C
+Shadow-MSM: initcall begin 0xC032BC60
+Shadow-MSM: initcall end 0xC032BC60
+Shadow-MSM: initcall begin 0xC032BD88
+Shadow-MSM: initcall end 0xC032BD88
+Shadow-MSM: initcall begin 0xC032BE54
+Shadow-MSM: initcall end 0xC032BE54
+Shadow-MSM: initcall begin 0xC032C0BC
+Shadow-MSM: initcall end 0xC032C0BC
+Shadow-MSM: initcall begin 0xC032C0F0
+Shadow-MSM: initcall end 0xC032C0F0
+Shadow-MSM: initcall begin 0xC032C128
+Shadow-MSM: initcall end 0xC032C128
+Shadow-MSM: initcall begin 0xC032C150
+Shadow-MSM: initcall end 0xC032C150
+Shadow-MSM: initcall begin 0xC032C194
+Shadow-MSM: initcall end 0xC032C194
+Shadow-MSM: initcall begin 0xC032C1CC
+Shadow-MSM: initcall end 0xC032C1CC
+Shadow-MSM: initcall begin 0xC032C20C
+Shadow-MSM: initcall end 0xC032C20C
+Shadow-MSM: initcall begin 0xC032C24C
+Shadow-MSM: initcall end 0xC032C24C
+Shadow-MSM: initcall begin 0xC032C274
+Shadow-MSM: initcall end 0xC032C274
+Shadow-MSM: initcall begin 0xC032C2B4
+Shadow-MSM: initcall end 0xC032C2B4
+Shadow-MSM: initcall begin 0xC032C2F4
+Shadow-MSM: initcall end 0xC032C2F4
+Shadow-MSM: initcall begin 0xC032C3B8
+Shadow-MSM: initcall end 0xC032C3B8
+Shadow-MSM: initcall begin 0xC032C3E0
+Shadow-MSM: initcall end 0xC032C3E0
+Shadow-MSM: initcall begin 0xC032C640
+Shadow-MSM: initcall end 0xC032C640
+Shadow-MSM: initcall begin 0xC032F630
+Shadow-MSM: initcall end 0xC032F630
+Shadow-MSM: initcall begin 0xC032FA64
+Shadow-MSM: initcall end 0xC032FA64
+Shadow-MSM: initcall begin 0xC0330458
+Shadow-MSM: initcall end 0xC0330458
+Shadow-MSM: initcall begin 0xC031E424
+Shadow-MSM: initcall end 0xC031E424
+Shadow-MSM: initcall level end 0x00000005
+Shadow-MSM: initcall level begin 0x00000006
+Shadow-MSM: initcall begin 0xC0321FB8
+Shadow-MSM: initcall end 0xC0321FB8
+Shadow-MSM: initcall begin 0xC0321FEC
+Shadow-MSM: initcall end 0xC0321FEC
+Shadow-MSM: initcall begin 0xC03222A4
+Shadow-MSM: initcall end 0xC03222A4
+Shadow-MSM: initcall begin 0xC03246DC
+Shadow-MSM: initcall end 0xC03246DC
+Shadow-MSM: initcall begin 0xC0324BB8
+Shadow-MSM: initcall end 0xC0324BB8
+Shadow-MSM: initcall begin 0xC0324EAC
+Shadow-MSM: initcall end 0xC0324EAC
+Shadow-MSM: initcall begin 0xC0324FC8
+Shadow-MSM: initcall end 0xC0324FC8
+Shadow-MSM: initcall begin 0xC0325008
+Shadow-MSM: initcall end 0xC0325008
+Shadow-MSM: initcall begin 0xC032506C
+Shadow-MSM: initcall end 0xC032506C
+Shadow-MSM: initcall begin 0xC03250A8
+Shadow-MSM: initcall end 0xC03250A8
+Shadow-MSM: initcall begin 0xC0325110
+Shadow-MSM: initcall end 0xC0325110
+Shadow-MSM: initcall begin 0xC0325518
+Shadow-MSM: initcall end 0xC0325518
+Shadow-MSM: initcall begin 0xC0325580
+Shadow-MSM: initcall end 0xC0325580
+Shadow-MSM: initcall begin 0xC03255BC
+Shadow-MSM: initcall end 0xC03255BC
+Shadow-MSM: initcall begin 0xC03255EC
+Shadow-MSM: initcall end 0xC03255EC
+Shadow-MSM: initcall begin 0xC032560C
+Shadow-MSM: initcall end 0xC032560C
+Shadow-MSM: initcall begin 0xC03257A8
+Shadow-MSM: initcall end 0xC03257A8
+Shadow-MSM: initcall begin 0xC03259C8
+Shadow-MSM: initcall end 0xC03259C8
+Shadow-MSM: initcall begin 0xC0325A78
+Shadow-MSM: initcall end 0xC0325A78
+Shadow-MSM: initcall begin 0xC03268EC
+Shadow-MSM: initcall end 0xC03268EC
+Shadow-MSM: initcall begin 0xC0326BC8
+Shadow-MSM: initcall end 0xC0326BC8
+Shadow-MSM: initcall begin 0xC0326DD4
+Shadow-MSM: initcall end 0xC0326DD4
+Shadow-MSM: initcall begin 0xC0328A30
+Shadow-MSM: initcall end 0xC0328A30
+Shadow-MSM: initcall begin 0xC032969C
+Shadow-MSM: initcall end 0xC032969C
+Shadow-MSM: initcall begin 0xC03296FC
+Shadow-MSM: initcall end 0xC03296FC
+Shadow-MSM: initcall begin 0xC032A99C
+Shadow-MSM: initcall end 0xC032A99C
+Shadow-MSM: initcall begin 0xC032AC38
+Shadow-MSM: initcall end 0xC032AC38
+Shadow-MSM: initcall begin 0xC032B00C
+Shadow-MSM: initcall end 0xC032B00C
+Shadow-MSM: initcall begin 0xC032B9B4
+Shadow-MSM: initcall end 0xC032B9B4
+Shadow-MSM: initcall begin 0xC032BCC4
+Shadow-MSM: initcall end 0xC032BCC4
+Shadow-MSM: initcall begin 0xC032C5E4
+Shadow-MSM: initcall end 0xC032C5E4
+Shadow-MSM: initcall begin 0xC032C610
+Shadow-MSM: initcall end 0xC032C610
+Shadow-MSM: initcall begin 0xC032C64C
+Shadow-MSM: initcall end 0xC032C64C
+Shadow-MSM: initcall begin 0xC032C65C
+Shadow-MSM: initcall end 0xC032C65C
+Shadow-MSM: initcall begin 0xC032C66C
+Shadow-MSM: initcall end 0xC032C66C
+Shadow-MSM: initcall begin 0xC032C67C
+Shadow-MSM: initcall end 0xC032C67C
+Shadow-MSM: initcall begin 0xC032C68C
+Shadow-MSM: initcall end 0xC032C68C
+Shadow-MSM: initcall begin 0xC032C894
+Shadow-MSM: initcall end 0xC032C894
+Shadow-MSM: initcall begin 0xC032CD00
+Shadow-MSM: initcall end 0xC032CD00
+Shadow-MSM: initcall begin 0xC032CDAC
+Shadow-MSM: initcall end 0xC032CDAC
+Shadow-MSM: initcall begin 0xC032CDC4
+Shadow-MSM: initcall end 0xC032CDC4
+Shadow-MSM: initcall begin 0xC032CEE8
+Shadow-MSM: initcall end 0xC032CEE8
+Shadow-MSM: initcall begin 0xC032CEF0
+Shadow-MSM: initcall end 0xC032CEF0
+Shadow-MSM: initcall begin 0xC032D0B4
+Shadow-MSM: initcall end 0xC032D0B4
+Shadow-MSM: initcall begin 0xC032D0C4
+Shadow-MSM: initcall end 0xC032D0C4
+Shadow-MSM: initcall begin 0xC032D1EC
+Shadow-MSM: initcall end 0xC032D1EC
+Shadow-MSM: initcall begin 0xC032D370
+Shadow-MSM: initcall end 0xC032D370
+Shadow-MSM: initcall begin 0xC032D380
+Shadow-MSM: initcall end 0xC032D380
+Shadow-MSM: initcall begin 0xC032DA1C
+Shadow-MSM: initcall end 0xC032DA1C
+Shadow-MSM: initcall begin 0xC032DA30
+Shadow-MSM: initcall end 0xC032DA30
+Shadow-MSM: initcall begin 0xC032DA44
+Shadow-MSM: initcall end 0xC032DA44
+Shadow-MSM: initcall begin 0xC032DDAC
+Shadow-MSM: initcall end 0xC032DDAC
+Shadow-MSM: initcall begin 0xC032DF4C
+Shadow-MSM: initcall end 0xC032DF4C
+Shadow-MSM: initcall begin 0xC032E0C4
+Shadow-MSM: initcall end 0xC032E0C4
+Shadow-MSM: initcall begin 0xC032E0E0
+Shadow-MSM: initcall end 0xC032E0E0
+Shadow-MSM: initcall begin 0xC032E488
+Shadow-MSM: initcall end 0xC032E488
+Shadow-MSM: initcall begin 0xC032F268
+Shadow-MSM: initcall end 0xC032F268
+Shadow-MSM: initcall begin 0xC032F610
+Shadow-MSM: initcall end 0xC032F610
+Shadow-MSM: initcall begin 0xC032F620
+Shadow-MSM: initcall end 0xC032F620
+Shadow-MSM: initcall begin 0xC032F708
+Shadow-MSM: initcall end 0xC032F708
+Shadow-MSM: initcall begin 0xC032FAEC
+Shadow-MSM: initcall end 0xC032FAEC
+Shadow-MSM: initcall begin 0xC0330098
+Shadow-MSM: initcall end 0xC0330098
+Shadow-MSM: initcall begin 0xC0330108
+Shadow-MSM: initcall end 0xC0330108
+Shadow-MSM: initcall begin 0xC0330530
+Shadow-MSM: initcall end 0xC0330530
+Shadow-MSM: initcall begin 0xC0330628
+Shadow-MSM: initcall end 0xC0330628
+Shadow-MSM: initcall begin 0xC033074C
+Shadow-MSM: initcall end 0xC033074C
+Shadow-MSM: initcall begin 0xC0330758
+Shadow-MSM: initcall end 0xC0330758
+Shadow-MSM: initcall begin 0xC0330830
+Shadow-MSM: initcall end 0xC0330830
+Shadow-MSM: initcall begin 0xC0330840
+Shadow-MSM: initcall end 0xC0330840
+Shadow-MSM: initcall begin 0xC0331274
+Shadow-MSM: initcall end 0xC0331274
+Shadow-MSM: initcall begin 0xC03312C8
+Shadow-MSM: initcall end 0xC03312C8
+Shadow-MSM: initcall begin 0xC03312E0
+Shadow-MSM: initcall end 0xC03312E0
+Shadow-MSM: initcall begin 0xC03312F8
+Shadow-MSM: initcall end 0xC03312F8
+Shadow-MSM: initcall begin 0xC0331310
+Shadow-MSM: initcall end 0xC0331310
+Shadow-MSM: initcall begin 0xC0331328
+Shadow-MSM: initcall end 0xC0331328
+Shadow-MSM: initcall begin 0xC0331340
+Shadow-MSM: initcall end 0xC0331340
+Shadow-MSM: initcall begin 0xC0331358
+Shadow-MSM: initcall end 0xC0331358
+Shadow-MSM: initcall begin 0xC0331370
+Shadow-MSM: initcall end 0xC0331370
+Shadow-MSM: initcall begin 0xC0331388
+Shadow-MSM: initcall end 0xC0331388
+Shadow-MSM: initcall begin 0xC03313A0
+Shadow-MSM: initcall end 0xC03313A0
+Shadow-MSM: initcall begin 0xC03313B8
+Shadow-MSM: initcall end 0xC03313B8
+Shadow-MSM: initcall begin 0xC03313D0
+Shadow-MSM: initcall end 0xC03313D0
+Shadow-MSM: initcall begin 0xC03313E8
+Shadow-MSM: initcall end 0xC03313E8
+Shadow-MSM: initcall begin 0xC0331400
+Shadow-MSM: initcall end 0xC0331400
+Shadow-MSM: initcall begin 0xC0331418
+Shadow-MSM: initcall end 0xC0331418
+Shadow-MSM: initcall begin 0xC0331430
+Shadow-MSM: initcall end 0xC0331430
+Shadow-MSM: initcall begin 0xC0331448
+Shadow-MSM: initcall end 0xC0331448
+Shadow-MSM: initcall begin 0xC0331460
+Shadow-MSM: initcall end 0xC0331460
+Shadow-MSM: initcall begin 0xC0331478
+Shadow-MSM: initcall end 0xC0331478
+Shadow-MSM: initcall begin 0xC0331490
+Shadow-MSM: initcall end 0xC0331490
+Shadow-MSM: initcall begin 0xC03314A8
+Shadow-MSM: initcall end 0xC03314A8
+Shadow-MSM: initcall begin 0xC03336A8
+Shadow-MSM: initcall end 0xC03336A8
+Shadow-MSM: initcall level end 0x00000006
+Shadow-MSM: initcall level begin 0x00000007
+Shadow-MSM: initcall begin 0xC031E678
+Shadow-MSM: initcall end 0xC031E678
+Shadow-MSM: initcall begin 0xC032339C
+Shadow-MSM: initcall end 0xC032339C
+Shadow-MSM: initcall begin 0xC03234C0
+Shadow-MSM: initcall end 0xC03234C0
+Shadow-MSM: initcall begin 0xC0323810
+Shadow-MSM: initcall end 0xC0323810
+Shadow-MSM: initcall begin 0xC03238C0
+Shadow-MSM: initcall end 0xC03238C0
+Shadow-MSM: initcall begin 0xC0323898
+Shadow-MSM: initcall end 0xC0323898
+Shadow-MSM: initcall begin 0xC0323988
+Shadow-MSM: initcall end 0xC0323988
+Shadow-MSM: initcall begin 0xC03239C4
+Shadow-MSM: initcall end 0xC03239C4
+Shadow-MSM: initcall begin 0xC0324210
+Shadow-MSM: initcall end 0xC0324210
+Shadow-MSM: initcall begin 0xC0325424
+Shadow-MSM: initcall end 0xC0325424
+Shadow-MSM: initcall begin 0xC0325828
+Shadow-MSM: initcall end 0xC0325828
+Shadow-MSM: initcall begin 0xC0326CB8
+Shadow-MSM: initcall end 0xC0326CB8
+Shadow-MSM: initcall begin 0xC0329C9C
+Shadow-MSM: initcall end 0xC0329C9C
+Shadow-MSM: initcall begin 0xC032C888
+Shadow-MSM: initcall end 0xC032C888
+Shadow-MSM: initcall begin 0xC032C934
+Shadow-MSM: initcall end 0xC032C934
+Shadow-MSM: initcall begin 0xC032D53C
+Shadow-MSM: initcall end 0xC032D53C
+Shadow-MSM: initcall begin 0xC01EDEE8
+Shadow-MSM: initcall end 0xC01EDEE8
+Shadow-MSM: initcall begin 0xC01F2618
+Shadow-MSM: initcall end 0xC01F2618
+Shadow-MSM: initcall begin 0xC0330770
+Shadow-MSM: initcall end 0xC0330770
+Shadow-MSM: initcall begin 0xC03316D8
+Shadow-MSM: initcall end 0xC03316D8
+Shadow-MSM: initcall begin 0xC032D710
+Shadow-MSM: initcall end 0xC032D710
+Shadow-MSM: initcall begin 0xC032DDBC
+Shadow-MSM: initcall end 0xC032DDBC
+Shadow-MSM: initcall begin 0xC0331594
+Shadow-MSM: initcall end 0xC0331594
+Shadow-MSM: initcall level end 0x00000007
+Shadow-MSM: initcalls completed
+Shadow-MSM: do_basic_setup completed
+Shadow-MSM: built-in KUnit phase completed
+Shadow-MSM: waiting for initramfs
+Shadow-MSM: initramfs wait completed
+Shadow-MSM: rootfs console setup completed
+Shadow-MSM: initramfs init missing; preparing root namespace
+Shadow-MSM: root namespace prepared
+Shadow-MSM: integrity keys loaded
+Shadow-MSM: kernel_init_freeable completed
+Transport disconnected after handoff: GetOverlappedResult failed (PermissionError(13, 'A device attached to the system is not functioning.', None, 31))

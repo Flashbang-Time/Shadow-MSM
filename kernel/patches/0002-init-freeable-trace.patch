@@ -99,7 +99,70 @@ index 9cde5a6..fbdcf5f 100644
  }
  
  static void __init do_pre_smp_initcalls(void)
-@@ -1847,47 +1847,113 @@ static noinline void __init kernel_init_freeable(void)
+@@ -1765,30 +1821,62 @@ static int __ref kernel_init(void *unused)
+ #endif
+ 	/* need to finish all async __init code before freeing the memory */
+ 	async_synchronize_full();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: async init synchronized\r\n");
++#endif
+ 
+ 	system_state = SYSTEM_FREEING_INITMEM;
+ 	kprobe_free_init_mem();
+ 	ftrace_free_init_mem();
+ 	kgdb_free_init_mem();
+ 	exit_boot_config();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: init-only services detached\r\n");
++#endif
+ 	free_initmem();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: init memory released\r\n");
++#endif
+ 	mark_readonly();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: read-only mappings finalized\r\n");
++#endif
+ 
+ 	/*
+ 	 * Kernel mappings are now finalized - update the userspace page-table
+ 	 * to finalize PTI.
+ 	 */
+ 	pti_finalize();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: page-table isolation finalized\r\n");
++#endif
+ 
+ 	system_state = SYSTEM_RUNNING;
+ 	numa_default_policy();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: system state is running\r\n");
++#endif
+ 
+ 	rcu_end_inkernel_boot();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: in-kernel boot phase ended\r\n");
++#endif
+ 
+ 	do_sysctl_args();
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	shadow_msm_c_trace("Shadow-MSM: boot sysctl arguments applied\r\n");
++#endif
+ 
+ 	if (ramdisk_execute_command) {
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++		shadow_msm_c_trace("Shadow-MSM: executing built-in /init\r\n");
++#endif
+ 		ret = run_init_process(ramdisk_execute_command);
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++		shadow_msm_c_trace_hex(
++			"Shadow-MSM: built-in /init exec failed ",
++			(unsigned long)ret);
++#endif
+ 		if (!ret)
+ 			return 0;
+ 		pr_err("Failed to execute %s (error %d)\n",
+@@ -1847,47 +1935,113 @@ static noinline void __init kernel_init_freeable(void)
  {
  	/* Now the scheduler is fully set up and can do blocking allocations */
  	gfp_allowed_mask = __GFP_BITS_MASK;

@@ -22,7 +22,11 @@ python_cmd="${SHADOW_MSM_PYTHON:-python3}"
 config_file="${repo_root}/kernel/k3765_probe.config"
 dts_file="${repo_root}/kernel/dts/k3765-z-probe.dts"
 shadow_timer_driver="${repo_root}/kernel/drivers/timer-shadow-msm.c"
+shadow_init_source="${repo_root}/kernel/userspace/shadow-init.c"
 bl1_builder="${repo_root}/work/build_linux_image_bl1.py"
+shadow_init_binary="${output_root}/shadow-init"
+initramfs_list="${output_root}/shadow-initramfs.list"
+initramfs_config="${output_root}/shadow-initramfs.config"
 
 for patch_file in "${repo_root}"/kernel/patches/*.patch; do
 	if git -C "${kernel_tree}" apply --reverse --check \
@@ -44,6 +48,47 @@ if ! grep -q 'timer-shadow-msm.o' \
 		>> "${kernel_tree}/drivers/clocksource/Makefile"
 fi
 
+arm-linux-gnueabi-gcc \
+	-march=armv5te \
+	-marm \
+	-Os \
+	-ffreestanding \
+	-ffunction-sections \
+	-fdata-sections \
+	-fno-builtin \
+	-fno-pic \
+	-fno-pie \
+	-fno-stack-protector \
+	-fno-unwind-tables \
+	-fno-asynchronous-unwind-tables \
+	-nostdlib \
+	-static \
+	-no-pie \
+	-Wl,--build-id=none \
+	-Wl,--gc-sections \
+	-Wl,-e,_start \
+	-Wl,-Ttext=0x00010000 \
+	-o "${shadow_init_binary}" \
+	"${shadow_init_source}"
+
+arm-linux-gnueabi-readelf -h "${shadow_init_binary}" |
+	grep -Eq 'Type:[[:space:]]+EXEC'
+arm-linux-gnueabi-readelf -h "${shadow_init_binary}" |
+	grep -Eq 'Machine:[[:space:]]+ARM'
+if arm-linux-gnueabi-readelf -l "${shadow_init_binary}" |
+	grep -q 'INTERP'; then
+	echo "shadow-init unexpectedly contains a dynamic interpreter" >&2
+	exit 1
+fi
+
+printf '%s\n' \
+	'dir /dev 0755 0 0' \
+	'nod /dev/shadowtrace 0600 0 0 c 240 0' \
+	"file /init ${shadow_init_binary} 0755 0 0" \
+	> "${initramfs_list}"
+printf 'CONFIG_INITRAMFS_SOURCE="%s"\n' "${initramfs_list}" \
+	> "${initramfs_config}"
+
 make -C "${kernel_tree}" \
 	O="${kernel_out}" \
 	ARCH=arm \
@@ -54,7 +99,8 @@ make -C "${kernel_tree}" \
 	-m \
 	-O "${kernel_out}" \
 	"${kernel_out}/.config" \
-	"${config_file}"
+	"${config_file}" \
+	"${initramfs_config}"
 
 make -C "${kernel_tree}" \
 	O="${kernel_out}" \
@@ -65,6 +111,10 @@ make -C "${kernel_tree}" \
 grep -q '^CONFIG_CPU_ARM926T=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_SHADOW_MSM_EARLY_TRACE=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_AUTO_ZRELADDR=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_BINFMT_ELF=y$' "${kernel_out}/.config"
+grep -Fqx \
+	"CONFIG_INITRAMFS_SOURCE=\"${initramfs_list}\"" \
+	"${kernel_out}/.config"
 
 make -C "${kernel_tree}" \
 	O="${kernel_out}" \
@@ -79,6 +129,7 @@ cp "${kernel_out}/arch/arm/boot/Image" "${artifacts}/Image-k3765-probe"
 cp "${kernel_out}/.config" "${artifacts}/kernel.config"
 cp "${kernel_out}/vmlinux" "${artifacts}/vmlinux-k3765-probe"
 cp "${kernel_out}/System.map" "${artifacts}/System.map-k3765-probe"
+cp "${shadow_init_binary}" "${artifacts}/shadow-init"
 
 # BL1 contains exact sparse fingerprints of the Image. Rebuild it for every
 # kernel artifact so a stale bootloader cannot reject or misidentify a new
@@ -112,6 +163,13 @@ python3 "${repo_root}/kernel/verify_probe.py" \
 	--image "${artifacts}/Image-k3765-probe" \
 	--dtb "${artifacts}/k3765-z-probe.dtb" \
 	--report "${artifacts}/ARTIFACTS.txt"
+
+{
+	echo "PID 1 size: $(stat -c '%s' "${shadow_init_binary}")"
+	echo "PID 1 SHA256: $(sha256sum "${shadow_init_binary}" | cut -d' ' -f1)"
+	echo "PID 1 device: /dev/shadowtrace (character major 240, minor 0)"
+	echo "PID 1 storage access: none"
+} >> "${artifacts}/ARTIFACTS.txt"
 
 find "${artifacts}" \
 	-maxdepth 1 \
