@@ -100,7 +100,7 @@ void _start(void)
 		.seconds = 1,
 		.nanoseconds = 0,
 	};
-	struct shadow_utsname identity = { 0 };
+	static struct shadow_utsname identity;
 	long descriptor;
 
 	descriptor = shadow_syscall3(
