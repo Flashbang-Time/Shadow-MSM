@@ -2,8 +2,8 @@ diff --git a/init/main.c b/init/main.c
 index 9cde5a6..fbdcf5f 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -686,5 +686,27 @@ static __always_inline void shadow_msm_c_trace(const char *message)
- 	((void (*)(const char *))0x00816cf4UL)(message);
+@@ -689,5 +689,27 @@ static __always_inline void shadow_msm_c_trace(const char *message)
+ 	shadow_msm_watchdog_service();
  }
 +
 +static __always_inline void shadow_msm_c_trace_hex(const char *prefix,
