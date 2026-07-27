@@ -1209,3 +1209,39 @@ technical reference. The monitor and host loader implement no NAND operation.
   interrupt.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-27 - one-shot Linux watchdog service reaches `/init`
+
+- GitHub Actions run
+  [`30220899129`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30220899129)
+  built commit `0b0f850` successfully.
+- The downloaded ZIP matched GitHub's published SHA-256 digest
+  `82ecd4939be9e95c60611edba224b485f99ef0c9c410494caa79e89708af1de6`;
+  all 13 internal artifact hashes matched.
+- Target-side BL1 CRC32 was `0x8D826365`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- Linux serviced `0x8000540C` once during timer initialization and reached:
+
+  ```text
+  Shadow-MSM: MSM6290 timer IRQ route registered
+  Shadow-MSM: MSM6290 32.768-kHz clockevent registered
+  Shadow-MSM: /dev/shadowtrace process bridge registered
+  Shadow-MSM: hardware ZTE K3765-Z / Qualcomm MSM6290
+  Shadow-MSM: CPU MIDR 0x41069265
+  Shadow-MSM: physical RAM window 0x00000000-0x01FFFFFF
+  Shadow-MSM: executing built-in /init
+  ```
+
+- No `/dev/shadowtrace` open record appeared before the target reset to its
+  stock three-interface USB personality. The one-shot service therefore
+  extended the deadline, but no periodic timer interrupt serviced the
+  watchdog before userspace entry.
+- The next build services the watchdog immediately around the final kernel
+  trace, exposes a private keepalive ioctl on `/dev/shadowtrace`, and makes
+  PID 1 call it independently of the still-unvalidated timer interrupt.
+- Preserved transcript:
+  `outputs/linux_watchdog_userspace_run_30220899129_20260727.log`.
+- Transcript SHA-256:
+  `40b487c9ff6b1c1c33c99062b5dc65838dd32a36978502f0717f5d2d41cbf54b`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

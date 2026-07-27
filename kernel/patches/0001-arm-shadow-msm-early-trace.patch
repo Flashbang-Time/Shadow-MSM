@@ -251,7 +251,7 @@ diff --git a/init/main.c b/init/main.c
 index aa21add..20a7274 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -680,18 +680,44 @@ static void __init setup_command_line(char *command_line)
+@@ -680,18 +680,47 @@ static void __init setup_command_line(char *command_line)
  
  static __initdata DECLARE_COMPLETION(kthreadd_done);
  
@@ -263,12 +263,15 @@ index aa21add..20a7274 100644
 + * kernel_init() enables the gate immediately before execve("/init").
 + */
 +static bool shadow_msm_c_trace_enabled;
++extern void shadow_msm_watchdog_service(void);
 +
 +static __always_inline void shadow_msm_c_trace(const char *message)
 +{
 +	if (!shadow_msm_c_trace_enabled)
 +		return;
++	shadow_msm_watchdog_service();
 +	((void (*)(const char *))0x00816cf4UL)(message);
++	shadow_msm_watchdog_service();
 +}
 +#endif
 +

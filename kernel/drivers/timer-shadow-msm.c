@@ -47,6 +47,7 @@
 
 #define SHADOW_MSM_TRACE_MAJOR		240
 #define SHADOW_MSM_TRACE_CHUNK		96U
+#define SHADOW_MSM_KEEPALIVE_IOCTL	0x534d0001UL
 
 static void __iomem *shadow_irq_base;
 static void __iomem *shadow_timer_base;
@@ -56,10 +57,22 @@ static DEFINE_RAW_SPINLOCK(shadow_irq_lock);
 static bool shadow_timer_periodic;
 static u32 shadow_timer_period;
 static int shadow_timer_linux_irq;
+static unsigned long shadow_timer_irq_count;
+
+void shadow_msm_watchdog_service(void);
+
+void shadow_msm_watchdog_service(void)
+{
+	if (likely(shadow_timer_base))
+		writel_relaxed(1, shadow_timer_base +
+			       SHADOW_MSM_WATCHDOG_RESET);
+}
 
 static __always_inline void shadow_trace(const char *message)
 {
+	shadow_msm_watchdog_service();
 	((void (*)(const char *))0x00816cf4UL)(message);
+	shadow_msm_watchdog_service();
 }
 
 static __always_inline void shadow_watchdog_pet(void)
@@ -71,7 +84,7 @@ static __always_inline void shadow_watchdog_pet(void)
 	 * without reset.  The same write before timer setup and on every
 	 * clockevent keeps Linux inside the proven watchdog window.
 	 */
-	writel_relaxed(1, shadow_timer_base + SHADOW_MSM_WATCHDOG_RESET);
+	shadow_msm_watchdog_service();
 }
 
 static void shadow_trace_hex(const char *prefix, unsigned long value)
@@ -304,6 +317,7 @@ static irqreturn_t shadow_timer_interrupt(int irq, void *device)
 	 * Process-context boot checkpoints provide the safe progress signal.
 	 */
 
+	shadow_timer_irq_count++;
 	shadow_watchdog_pet();
 
 	if (shadow_timer_periodic)
@@ -412,9 +426,21 @@ static ssize_t shadow_trace_write(struct file *file,
 	return total;
 }
 
+static long shadow_trace_ioctl(struct file *file,
+			       unsigned int command,
+			       unsigned long argument)
+{
+	if (command != SHADOW_MSM_KEEPALIVE_IOCTL)
+		return -ENOTTY;
+
+	shadow_msm_watchdog_service();
+	return READ_ONCE(shadow_timer_irq_count);
+}
+
 static const struct file_operations shadow_trace_operations = {
 	.open = shadow_trace_open,
 	.write = shadow_trace_write,
+	.unlocked_ioctl = shadow_trace_ioctl,
 	.llseek = no_llseek,
 };
 

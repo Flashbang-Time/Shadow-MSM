@@ -4,21 +4,21 @@
  *
  * This binary uses only ARM EABI system calls.  It writes its boot identity
  * and a bounded-rate heartbeat to /dev/shadowtrace, then remains PID 1
- * forever.  It has no filesystem, NAND, network, or process-launching code.
+ * forever.  Until the MSM6290 clockevent is fully validated, PID 1 also
+ * services the firmware-configured watchdog through a private RAM-only
+ * ioctl.  It has no filesystem, NAND, network, or process-launching code.
  */
 
 #define SHADOW_SYS_WRITE	4
 #define SHADOW_SYS_OPEN		5
+#define SHADOW_SYS_IOCTL	54
 #define SHADOW_SYS_UNAME	122
-#define SHADOW_SYS_NANOSLEEP	162
+#define SHADOW_SYS_SCHED_YIELD	158
 
 #define SHADOW_O_WRONLY		1
 #define SHADOW_UTS_LENGTH	65
-
-struct shadow_timespec {
-	long seconds;
-	long nanoseconds;
-};
+#define SHADOW_KEEPALIVE_IOCTL	0x534d0001UL
+#define SHADOW_HEARTBEAT_MASK	0x0003ffffUL
 
 struct shadow_utsname {
 	char sysname[SHADOW_UTS_LENGTH];
@@ -39,6 +39,19 @@ static long shadow_syscall2(long number, long argument0, long argument1)
 		"svc 0"
 		: "+r" (r0)
 		: "r" (r1), "r" (r7)
+		: "memory");
+	return r0;
+}
+
+static long shadow_syscall0(long number)
+{
+	register long r7 asm("r7") = number;
+	register long r0 asm("r0");
+
+	asm volatile(
+		"svc 0"
+		: "=r" (r0)
+		: "r" (r7)
 		: "memory");
 	return r0;
 }
@@ -96,12 +109,10 @@ static void shadow_write_field(long descriptor, const char *label,
 
 void _start(void)
 {
-	static const struct shadow_timespec heartbeat_period = {
-		.seconds = 1,
-		.nanoseconds = 0,
-	};
 	static struct shadow_utsname identity;
+	unsigned long keepalive_count = 0;
 	long descriptor;
+	long timer_irq_count;
 
 	descriptor = shadow_syscall3(
 		SHADOW_SYS_OPEN,
@@ -110,9 +121,22 @@ void _start(void)
 		0);
 
 	if (descriptor >= 0) {
+		timer_irq_count = shadow_syscall3(
+			SHADOW_SYS_IOCTL,
+			descriptor,
+			SHADOW_KEEPALIVE_IOCTL,
+			0);
 		shadow_write_text(
 			descriptor,
 			"Shadow-MSM: entered freestanding PID 1 userspace\r\n");
+		if (timer_irq_count > 0)
+			shadow_write_text(
+				descriptor,
+				"Shadow-MSM: hardware timer IRQ observed\r\n");
+		else
+			shadow_write_text(
+				descriptor,
+				"Shadow-MSM: userspace watchdog keepalive active\r\n");
 
 		if (shadow_syscall2(
 			    SHADOW_SYS_UNAME,
@@ -140,11 +164,15 @@ void _start(void)
 	}
 
 	for (;;) {
-		shadow_syscall2(
-			SHADOW_SYS_NANOSLEEP,
-			(long)&heartbeat_period,
-			0);
 		if (descriptor >= 0)
+			shadow_syscall3(
+				SHADOW_SYS_IOCTL,
+				descriptor,
+				SHADOW_KEEPALIVE_IOCTL,
+				0);
+		shadow_syscall0(SHADOW_SYS_SCHED_YIELD);
+		if (descriptor >= 0 &&
+		    !(++keepalive_count & SHADOW_HEARTBEAT_MASK))
 			shadow_write_text(
 				descriptor,
 				"Shadow-MSM: PID 1 heartbeat\r\n");
