@@ -1245,3 +1245,39 @@ technical reference. The monitor and host loader implement no NAND operation.
   `40b487c9ff6b1c1c33c99062b5dc65838dd32a36978502f0717f5d2d41cbf54b`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-28 - PID 1 keepalive build reaches the userspace handoff
+
+- GitHub Actions run
+  [`30254049704`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30254049704)
+  built commit `602430f` successfully.
+- The downloaded ZIP matched GitHub's published SHA-256 digest
+  `d8d81d8c497a3b5424dfd6ef1325ebde7752836c560ccb68246cf3cab6a217a7`;
+  all 13 internal artifact hashes matched.
+- Target-side BL1 CRC32 was `0x60022E14`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- Linux again reached:
+
+  ```text
+  Shadow-MSM: MSM6290 timer IRQ route registered
+  Shadow-MSM: MSM6290 32.768-kHz clockevent registered
+  Shadow-MSM: /dev/shadowtrace process bridge registered
+  Shadow-MSM: hardware ZTE K3765-Z / Qualcomm MSM6290
+  Shadow-MSM: CPU MIDR 0x41069265
+  Shadow-MSM: physical RAM window 0x00000000-0x01FFFFFF
+  Shadow-MSM: executing built-in /init
+  ```
+
+- The target reset to its stock COM26/COM30/modem interfaces before the
+  `/dev/shadowtrace` open checkpoint appeared. Servicing the watchdog around
+  the final kernel trace and adding a userspace keepalive ioctl did not cross
+  the first userspace boundary.
+- The next diagnostic adds one-shot checkpoints immediately before ARM
+  returns to PID 1 and immediately after PID 1 enters its first SVC. Both
+  checkpoints also service the watchdog.
+- Preserved transcript:
+  `outputs/linux_pid1_keepalive_run_30254049704_20260728.log`.
+- Transcript SHA-256:
+  `e5d6cc75e6284f040a5d2388f48bd7ef4d6072b6ca293d4cf9871ee00b07fc30`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

@@ -1,0 +1,43 @@
+From: Shadow-MSM contributors
+Subject: [PATCH] ARM: trace and service watchdog at first userspace boundary
+
+Add device-specific diagnostic hooks immediately before the first return to
+PID 1 and immediately after its first SVC entry. The hooks service the
+firmware-configured watchdog and emit one bounded trace message each. This
+closes the otherwise unobservable gap between execve("/init") and the first
+userspace keepalive ioctl.
+
+This patch is intentionally device-specific and is not suitable for a generic
+ARM kernel.
+
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index 6c9c0f4..28a108b 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -128,6 +128,10 @@ ENTRY(ret_to_user_from_irq)
+ 	movs	r1, r1, lsl #16
+ 	bne	slow_work_pending
+ no_work_pending:
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	bl	shadow_msm_user_return_checkpoint
++#endif
++
+ 	asm_trace_hardirqs_on save = 0
+ 
+ 	/* perform architecture specific actions before user return */
+@@ -209,6 +213,15 @@ ENTRY(vector_swi)
+ 	enable_irq_notrace
+ 	ct_user_exit save=0
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	/*
++	 * r0-r3 contain syscall arguments and are caller-clobbered by the
++	 * diagnostic hook. Restore them from the pt_regs frame afterwards.
++	 */
++	bl	shadow_msm_first_syscall_checkpoint
++	ldmia	sp, {r0 - r3}
++#endif
++
+ 	/*
+ 	 * Get the system call number.
+ 	 */

@@ -58,6 +58,8 @@ static bool shadow_timer_periodic;
 static u32 shadow_timer_period;
 static int shadow_timer_linux_irq;
 static unsigned long shadow_timer_irq_count;
+static bool shadow_user_return_seen;
+static bool shadow_first_syscall_seen;
 
 void shadow_msm_watchdog_service(void);
 
@@ -73,6 +75,31 @@ static __always_inline void shadow_trace(const char *message)
 	shadow_msm_watchdog_service();
 	((void (*)(const char *))0x00816cf4UL)(message);
 	shadow_msm_watchdog_service();
+}
+
+/*
+ * These two hooks are called from the ARM exception-entry assembly.  Besides
+ * locating the exact first userspace boundary, they close the watchdog gap
+ * between execve("/init") and PID 1's first private keepalive ioctl.
+ */
+void shadow_msm_user_return_checkpoint(void)
+{
+	shadow_msm_watchdog_service();
+	if (!READ_ONCE(shadow_user_return_seen)) {
+		WRITE_ONCE(shadow_user_return_seen, true);
+		shadow_trace(
+			"Shadow-MSM: returning to PID 1 userspace\r\n");
+	}
+}
+
+void shadow_msm_first_syscall_checkpoint(void)
+{
+	shadow_msm_watchdog_service();
+	if (!READ_ONCE(shadow_first_syscall_seen)) {
+		WRITE_ONCE(shadow_first_syscall_seen, true);
+		shadow_trace(
+			"Shadow-MSM: PID 1 entered its first syscall\r\n");
+	}
 }
 
 static __always_inline void shadow_watchdog_pet(void)
