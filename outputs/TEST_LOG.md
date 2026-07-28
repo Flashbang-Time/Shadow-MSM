@@ -1281,3 +1281,42 @@ technical reference. The monitor and host loader implement no NAND operation.
   `e5d6cc75e6284f040a5d2388f48bd7ef4d6072b6ca293d4cf9871ee00b07fc30`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-07-28 - first userspace-boundary trace exposes the lost runtime mapping
+
+- GitHub Actions run
+  [`30395183640`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30395183640)
+  built commit `b25cc90` successfully.
+- The downloaded ZIP matched GitHub's published SHA-256 digest
+  `878608e3d8bb516532a58edecc1430d9c0ca0fdf48bfdeb459bc2b4a82d44376`;
+  all 13 internal artifact hashes matched.
+- Target-side BL1 CRC32 was `0xA445CE9B`; target-side DTB CRC32 was
+  `0x483C3017`; BL1's sparse Linux Image fingerprints all passed.
+- Linux again reached:
+
+  ```text
+  Shadow-MSM: MSM6290 timer IRQ route registered
+  Shadow-MSM: MSM6290 32.768-kHz clockevent registered
+  Shadow-MSM: /dev/shadowtrace process bridge registered
+  Shadow-MSM: hardware ZTE K3765-Z / Qualcomm MSM6290
+  Shadow-MSM: CPU MIDR 0x41069265
+  Shadow-MSM: physical RAM window 0x00000000-0x01FFFFFF
+  Shadow-MSM: executing built-in /init
+  ```
+
+- Neither the new `ret_to_user` checkpoint nor the first-SVC checkpoint
+  printed before the target reset to its stock COM26/COM30/modem interfaces.
+- The failure is at the `exec_mmap()` address-space transition:
+  `pgd_alloc()` clears the process user half instead of copying the early
+  supervisor-only identity mapping at `0x00800000`. The first post-exec
+  checkpoint then cannot call the resident print routine at `0x00816CF4`.
+- The next build copies the single non-LPAE PGD entry covering
+  `0x00800000..0x009FFFFF` from `init_mm` into each process page table. The
+  original supervisor-only attributes are preserved, and the physical range
+  remains reserved from Linux.
+- Preserved transcript:
+  `outputs/linux_userspace_boundary_run_30395183640_20260728.log`.
+- Transcript SHA-256:
+  `e5d6cc75e6284f040a5d2388f48bd7ef4d6072b6ca293d4cf9871ee00b07fc30`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

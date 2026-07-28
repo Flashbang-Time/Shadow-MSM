@@ -1,0 +1,51 @@
+From: Shadow-MSM contributors
+Subject: [PATCH] ARM: preserve resident runtime mapping across exec
+
+The K3765-Z diagnostic transport executes from reserved physical RAM at
+0x00800000. The early boot page table contains a supervisor-only identity
+mapping for that runtime, but pgd_alloc() deliberately clears the entire user
+half when it creates PID 1's new address space. exec_mmap() therefore removes
+the mapping just before the first userspace return checkpoint can call it.
+
+Copy the one non-LPAE PGD entry that covers 0x00800000..0x009fffff from
+init_mm into every new process page table. The original section attributes
+remain supervisor-only; userspace cannot access the runtime. The physical
+range is already reserved by the K3765-Z device tree.
+
+This patch is intentionally device-specific and is not suitable for a generic
+ARM kernel.
+
+diff --git a/arch/arm/mm/pgd.c b/arch/arm/mm/pgd.c
+index 7f23c6d..641e56f 100644
+--- a/arch/arm/mm/pgd.c
++++ b/arch/arm/mm/pgd.c
+@@ -20,6 +20,10 @@
+ #define __pgd_free(pgd)	free_pages((unsigned long)pgd, 2)
+ #endif
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++#define SHADOW_MSM_RUNTIME_VADDR	0x00800000UL
++#endif
++
+ /*
+  * need to get a 16k page for level 1
+  */
+@@ -42,6 +46,18 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+ 	memcpy(new_pgd + USER_PTRS_PER_PGD, init_pgd + USER_PTRS_PER_PGD,
+ 		       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
+ 
++#ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++	/*
++	 * Keep the initialized ARMPRG runtime callable from privileged mode
++	 * after exec_mmap() activates a process page table. This copies the
++	 * existing supervisor-only section descriptors; it does not grant
++	 * userspace access to the reserved physical RAM.
++	 */
++	memcpy(new_pgd + pgd_index(SHADOW_MSM_RUNTIME_VADDR),
++	       init_pgd + pgd_index(SHADOW_MSM_RUNTIME_VADDR),
++	       sizeof(pgd_t));
++#endif
++
+ 	clean_dcache_area(new_pgd, PTRS_PER_PGD * sizeof(pgd_t));
+ 
+ #ifdef CONFIG_ARM_LPAE
