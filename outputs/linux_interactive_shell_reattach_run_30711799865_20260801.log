@@ -1,0 +1,12 @@
+Shadow-MSM RAM-resident Linux bring-up shell
+GPL-3.0-only; no persistent-storage access
+shadow-msm# 
+Timer IRQ count: 
+10921
+
+NAND operations: none
+shadow-msm# 
+REATTACH_OK
+
+shadow-msm# 
+Maximum capture runtime of 30 seconds reached; target left running.

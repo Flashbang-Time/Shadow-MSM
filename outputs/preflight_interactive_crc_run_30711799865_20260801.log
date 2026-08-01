@@ -1,0 +1,12 @@
+Shadow-MSM pre-handoff RAM CRC transcript
+Host time: 2026-08-01T21:54:09+03:00
+Port: COM94
+Persistence: RAM only; no NAND operation
+
+Command: k3765_stage0_console.py COM94 crc 0x01000000 5933
+CRC32: 0xBA1353EF
+
+Command: k3765_stage0_console.py COM94 crc 0x01F80000 891
+CRC32: 0x483C3017
+
+Both target values matched the verified host files.

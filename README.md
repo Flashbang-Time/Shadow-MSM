@@ -15,9 +15,9 @@ and a small second-stage bootloader—without modifying NAND.
 
 > [!IMPORTANT]
 > Linux v6.1 now executes on the physical K3765-Z from a RAM-only direct
-> `Image` handoff. The MSM6290 timer/IRQ driver is now verified on physical
-> hardware: Linux completes its first context switch, runs PID 1, and enters
-> `kernel_init_freeable()`. A usable shell is not available yet.
+> `Image` handoff. The MSM6290 timer/IRQ driver and bidirectional resident-USB
+> bridge are verified on physical hardware: Linux reaches freestanding PID 1
+> and provides the live `shadow-msm#` command shell without accessing NAND.
 
 ## Why this exists
 
@@ -76,7 +76,8 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Added a Linux v6.1 clocksource, clock-event, and IRQ-domain driver
 - [x] Verified timer/IRQ registration and the first PID 1 context switch
 - [x] Reached PID 1 `kernel_init_freeable()` on the physical target
-- [ ] Complete the remaining generic initcalls and enter built-in userspace
+- [x] Completed the generic initcalls and entered built-in ARM userspace
+- [x] Added and physically verified a reattachable RAM-only command shell
 - [ ] Replace the diagnostic trace path with a normal UART or USB console
 - [ ] Boot a built-in BusyBox initramfs
 - [ ] Add microSD, NAND read-only, USB gadget, and display support
@@ -239,13 +240,13 @@ compiles bounded `Image`, `zImage`, DTB, and symbol artifacts in GitHub
 Actions, and rejects any image that would overlap the resident stage-0
 runtime.
 
-The physical target now reaches stable ARM userspace. The verified trace from
-commit `35560c9` shows Linux resolving PID 1's first instruction-page fault,
-entering the syscall path, opening `/dev/shadowtrace`, observing hardware timer
-IRQs, reporting `Linux 6.1.0-shadow-msm-probe+ / armv5tejl`, and remaining
-alive for the complete 90-second capture.
+The physical target now reaches stable, interactive ARM userspace. Commit
+`6bc97cf` resolves PID 1's first instruction-page fault, enters the syscall
+path, opens `/dev/shadowtrace`, observes hardware timer IRQs, reports
+`Linux 6.1.0-shadow-msm-probe+ / armv5tejl`, and presents a reattachable
+`shadow-msm#` prompt.
 
-The next RAM-only probe adds a bidirectional bridge and a small built-in PID 1
+The RAM-only probe uses a bidirectional bridge and a small built-in PID 1
 command shell. The monitor accepts host input only through Shadow-MSM command
 `0x1c/0x0e`; its complete live command table is locked to the bounded
 Shadow-MSM handler so the original storage handlers are unreachable. The

@@ -1569,3 +1569,53 @@ technical reference. The monitor and host loader implement no NAND operation.
   this workstation has no ARM cross-compiler installed.
 - The change only affects RAM-resident PID 1 text formatting; no target or
   persistent-storage operation was performed.
+
+## 2026-08-01 - First interactive Linux shell on the physical K3765-Z
+
+- GitHub Actions run
+  [`30711799865`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30711799865)
+  built commit `6bc97cf` successfully. The downloaded artifact ZIP matched
+  GitHub's published SHA-256
+  `e239899b43a4569b1d53259ecaf1ee3ebd0e54c6a83f3568658969065e3abb1e`,
+  and all 13 files listed by its internal `SHA256SUMS` matched.
+- The target entered the raw downloader through only `DIAG_DLOAD_F` (`0x3a`)
+  and appeared as `ZTE HS-USB Diagnostics Interface (COM94)` after the known
+  legacy driver was selected.
+- Every bounded RAM upload packet was acknowledged. The resident monitor
+  returned GO ACK `0x02`; its SHA-256 was
+  `588e897f46a3d7dfe4f5f989bcc85ab3b4604b4f7ccacd5d802b53be226f4f52`.
+- Pre-handoff target CRCs exactly matched the host bundle:
+  - BL1 at `0x01000000`: `0xBA1353EF`
+  - DTB at `0x01F80000`: `0x483C3017`
+- BL1 validated the 3,635,632-byte Linux `Image`, the 891-byte DTB, and all
+  sparse Image fingerprints before the direct handoff. Linux reached PID 1,
+  resolved its expected first instruction-page fault at `0x000100c0`, entered
+  its first syscall, opened `/dev/shadowtrace`, and reported:
+
+  ```text
+  Linux
+  6.1.0-shadow-msm-probe+
+  armv5tejl
+  ```
+
+- PID 1 presented `shadow-msm#` and successfully executed `help`, `uname`,
+  `hardware`, `status`, and `echo SHADOW-MSM_SHELL_OK`. `status` reported a
+  live timer IRQ count and `NAND operations: none`.
+- A new host process then reattached without rebooting Linux. It executed
+  `about`, `status`, and `echo REATTACH_OK`; the live timer IRQ count had
+  advanced to `10921`.
+- Preserved normalized transcript SHA-256 values:
+  - `outputs/diag_dload_switch_run_30711799865_20260801.log`:
+    `4c23f173e9b162fe32483e59ffde25f42ed6770f1eaa935469d6ed48ce857244`
+  - `outputs/bundle_interactive_shell_run_30711799865_20260801.log`:
+    `cea0cb4f7bb6f534802fee129b4b945a13c4e986ff34b44e04b4cd46584da81c`
+  - `outputs/stage0_interactive_info_run_30711799865_20260801.log`:
+    `2a05b1e1e00d5d9756b893425091ceee3594e445d114d4ee77036d4fc57b915a`
+  - `outputs/preflight_interactive_crc_run_30711799865_20260801.log`:
+    `dfbe045dcaeb402a5447789971da79b18dfa43e42a8a6d36701710c811df2d37`
+  - `outputs/linux_interactive_shell_run_30711799865_20260801.log`:
+    `de4e4af804f13efe3b693b27b8c86650a68ce08a15748fcb11985b3dca246725`
+  - `outputs/linux_interactive_shell_reattach_run_30711799865_20260801.log`:
+    `c90369c042a7826a32b53df67824d537b1d478de2ffc13ef8466e31cdfa21dbb`
+- The target was left running from RAM after both bounded captures. No NAND
+  erase, program, partition-table, or persistent-storage command was sent.

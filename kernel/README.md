@@ -139,7 +139,7 @@ production kernel once a native console is available.
 
 ## RAM-only command shell
 
-The current source adds a one-way host-input ring at physical `0x008ff800`,
+The physically verified source adds a bounded host-input ring at physical `0x008ff800`,
 inside the already-reserved monitor window. `/dev/shadowtrace` polls the
 initialized OEM USB receiver only from process context and only while
 temporarily using `init_mm`; timer interrupts remain masked during that small
@@ -151,7 +151,8 @@ shadow-msm#
 
 Supported commands are `help`, `uname`, `hardware`, `status`, `about`,
 `echo`, and `clear`. This is a bring-up/recovery monitor, not yet a BusyBox or
-POSIX shell.
+POSIX shell. The physical K3765-Z accepted all commands, returned live timer
+IRQ counts, and accepted a second host attachment without rebooting Linux.
 
 The locally built stage-0 monitor locks all 28 OEM protocol command-table
 entries to the Shadow-MSM callback. That callback validates command `0x1c`
