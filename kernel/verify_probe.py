@@ -189,6 +189,7 @@ def main():
             f"DTB Linux RAM: {LINUX_PHYS_BASE:08X}+{LINUX_RAM_SIZE:08X}",
             "Required FDT reservations: present",
             "Resident runtime preserved: yes",
+            "Resident trace init_mm bridge: yes",
             "NAND operations present: no",
             "",
         )

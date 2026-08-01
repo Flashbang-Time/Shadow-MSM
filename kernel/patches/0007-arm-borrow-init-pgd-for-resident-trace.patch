@@ -1,0 +1,36 @@
+From: Shadow-MSM contributors
+Subject: [PATCH] ARM: borrow init page table for resident diagnostics
+
+The initialized ARMPRG diagnostic runtime calls a polling USB transport whose
+private MMIO and work-buffer mappings live in the early identity map.  Copying
+only the runtime's 0x00800000 PGD entry into PID 1 preserves its instructions
+and data but not every mapping reached through the initialized USB function
+table.
+
+Route C diagnostics through the board driver.  Its implementation saves the
+active ARM926 TTBR, temporarily installs init_mm's already-validated page
+table, emits one frame, and restores the process TTBR with IRQs masked.  This
+keeps the firmware device map private to the tiny privileged trace window
+instead of copying it into every userspace page table.
+
+The helper is diagnostic-only and specific to CONFIG_SHADOW_MSM_EARLY_TRACE.
+
+diff --git a/include/linux/shadow_msm_trace.h b/include/linux/shadow_msm_trace.h
+index 28f9efc..8f61098 100644
+--- a/include/linux/shadow_msm_trace.h
++++ b/include/linux/shadow_msm_trace.h
+@@ -4,12 +4,11 @@
+ 
+ #ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
+ void shadow_msm_watchdog_service(void);
++void shadow_msm_diag_emit(const char *message);
+ 
+ static inline void shadow_msm_diag_trace(const char *message)
+ {
+-	shadow_msm_watchdog_service();
+-	((void (*)(const char *))0x00816cf4UL)(message);
+-	shadow_msm_watchdog_service();
++	shadow_msm_diag_emit(message);
+ }
+ 
+ static inline void shadow_msm_diag_hex(const char *prefix,

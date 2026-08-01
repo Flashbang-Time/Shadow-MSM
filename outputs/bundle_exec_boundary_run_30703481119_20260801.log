@@ -1,0 +1,26 @@
+K3765-Z bounded RAM bundle load
+Host time: 2026-08-01T17:24:11
+No NAND erase/program/write operation is implemented.
+
+0x00800000  build\github-run-30219324982\ready-k3765-probe\armprg_stage0_monitor.bin
+  size   : 105,928
+  SHA-256: d62987d1bf6039c05b0cbf7e80ee86d47d8d00b5f154a22594c8ab30f9978dd5
+  CRC32  : E47D7226
+
+0x00208000  build\github-run-30703481119\Image-k3765-probe
+  size   : 3,635,632
+  SHA-256: 475740d44cef950efeddabf2dba27f253a77674da710140f8151939c29a817d4
+  CRC32  : 40750C60
+
+0x01000000  build\github-run-30703481119\k3765_bl1_linux_image.bin
+  size   : 5,933
+  SHA-256: 1b18e8ea7e912412bba57d128c6749fa30699cbea071ddd9191bbe4ade744f88
+  CRC32  : 39541CDD
+
+0x01F80000  build\github-run-30703481119\k3765-z-probe.dtb
+  size   : 891
+  SHA-256: 58607b3d3b36cd2f89b9ffbad53a7758173811086249eb99954884db7ba78a35
+  CRC32  : 483C3017
+PBL acknowledged every bounded RAM chunk.
+Stage-0 execute command sent.
+No persistent-storage command was sent.

@@ -18,6 +18,7 @@
 #include <linux/irqchip.h>
 #include <linux/irqdomain.h>
 #include <linux/minmax.h>
+#include <linux/mm.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
@@ -27,6 +28,9 @@
 #include <asm/cputype.h>
 #include <asm/exception.h>
 #include <asm/irq.h>
+#include <asm/memory.h>
+
+extern struct mm_struct init_mm;
 
 #define SHADOW_MSM_TIMER_RATE		32768U
 #define SHADOW_MSM_TIMER_IRQ		0x22U
@@ -62,6 +66,7 @@ static bool shadow_user_return_seen;
 static bool shadow_first_syscall_seen;
 
 void shadow_msm_watchdog_service(void);
+void shadow_msm_diag_emit(const char *message);
 
 void shadow_msm_watchdog_service(void)
 {
@@ -70,11 +75,56 @@ void shadow_msm_watchdog_service(void)
 			       SHADOW_MSM_WATCHDOG_RESET);
 }
 
+static __always_inline void shadow_msm_set_ttbr(unsigned long ttbr)
+{
+	unsigned long zero = 0;
+
+	/*
+	 * Match the exact ARM926 switch_mm sequence emitted by proc-arm926.S:
+	 * invalidate both caches, drain the write buffer, replace TTBR, then
+	 * invalidate the unified TLB.  The surrounding caller has IRQs masked.
+	 */
+	asm volatile(
+		"mcr p15, 0, %1, c7, c6, 0\n\t"
+		"mcr p15, 0, %1, c7, c5, 0\n\t"
+		"mcr p15, 0, %1, c7, c10, 4\n\t"
+		"mcr p15, 0, %0, c2, c0, 0\n\t"
+		"mcr p15, 0, %1, c8, c7, 0\n\t"
+		:
+		: "r" (ttbr), "r" (zero)
+		: "memory");
+}
+
+void shadow_msm_diag_emit(const char *message)
+{
+	unsigned long flags;
+	unsigned long saved_ttbr;
+	unsigned long init_ttbr = virt_to_phys(init_mm.pgd);
+	bool borrowed_init_mm;
+
+	shadow_msm_watchdog_service();
+	local_irq_save(flags);
+	asm volatile(
+		"mrc p15, 0, %0, c2, c0, 0"
+		: "=r" (saved_ttbr));
+
+	borrowed_init_mm =
+		(saved_ttbr & 0xffffc000UL) !=
+		(init_ttbr & 0xffffc000UL);
+	if (borrowed_init_mm)
+		shadow_msm_set_ttbr(init_ttbr);
+
+	((void (*)(const char *))0x00816cf4UL)(message);
+
+	if (borrowed_init_mm)
+		shadow_msm_set_ttbr(saved_ttbr);
+	local_irq_restore(flags);
+	shadow_msm_watchdog_service();
+}
+
 static __always_inline void shadow_trace(const char *message)
 {
-	shadow_msm_watchdog_service();
-	((void (*)(const char *))0x00816cf4UL)(message);
-	shadow_msm_watchdog_service();
+	shadow_msm_diag_emit(message);
 }
 
 /*

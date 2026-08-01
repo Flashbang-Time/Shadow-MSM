@@ -1364,3 +1364,48 @@ technical reference. The monitor and host loader implement no NAND operation.
   `319a6574aa0911b4ab5ba5941d4f6799794521e9bef37ad77845847798d09f39`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-08-01 - exec tracing isolates the process page-table switch
+
+- GitHub Actions run
+  [`30703481119`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30703481119)
+  built commit `6605439` successfully.
+- The downloaded ZIP matched GitHub's published SHA-256 digest
+  `c7ae0eca692fe8ef2fc363162c5d9e1783c6dcc5fa1c497fb65533bb7e3bd50a`;
+  all 13 internal artifact hashes matched.
+- The RAM bundle contained the expected host CRC32 values: Image
+  `0x40750C60`, BL1 `0x39541CDD`, and DTB `0x483C3017`. Every downloader RAM
+  packet was acknowledged, stage-0 returned GO ACK `0x02`, and BL1 reported
+  sparse Image and DTB validation `PASS`.
+- The expanded exec checkpoints crossed ELF parsing and reached exactly:
+
+  ```text
+  Shadow-MSM: ELF calling begin_new_exec
+  Shadow-MSM: begin_new_exec entered
+  Shadow-MSM: begin_new_exec switching mm
+  Shadow-MSM: exec_mmap entered
+  Shadow-MSM: exec_mmap activating PID 1 mm
+  ```
+
+- No post-`activate_mm()` frame arrived before the watchdog reset. Exact
+  disassembly of the shipped `vmlinux` confirmed that `pgd_alloc()` did copy
+  the intended PGD entry for `0x00800000..0x009FFFFF`; the patch was present
+  in machine code and is not a build omission.
+- The resident print routine and its immediate data buffers all lie inside
+  that copied range, but its initialized polling USB function table reaches
+  additional identity-mapped work buffers and device registers. Preserving
+  one PGD entry therefore keeps the ARMPRG code executable while losing the
+  rest of the transport's private mapping graph.
+- The next build routes each diagnostic frame through a short IRQ-masked
+  `init_mm` TTBR borrow, then restores PID 1's TTBR. This avoids copying
+  firmware device mappings into userspace page tables.
+- Preserved transfer transcript:
+  `outputs/bundle_exec_boundary_run_30703481119_20260801.log`.
+- Transfer transcript SHA-256:
+  `e3a2bb9d0ccf9ae65ef79dbbf773dd70bfbaea3de011d0a60c30d13d9e8e10a9`.
+- Preserved boot transcript:
+  `outputs/linux_exec_boundary_run_30703481119_20260801.log`.
+- Boot transcript SHA-256:
+  `a121fda497d05aa00498c7578c9c3ac3071f0a107b2c47384df813256851075b`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
