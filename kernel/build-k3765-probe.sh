@@ -90,7 +90,7 @@ make -C "${busybox_tree}" \
 	O="${busybox_out}" \
 	ARCH=arm \
 	CROSS_COMPILE=arm-linux-gnueabi- \
-	olddefconfig
+	oldconfig </dev/null
 make -C "${busybox_tree}" \
 	O="${busybox_out}" \
 	ARCH=arm \
