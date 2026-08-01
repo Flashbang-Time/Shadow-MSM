@@ -2,15 +2,19 @@
 /*
  * Minimal freestanding PID 1 for the Shadow-MSM RAM-only Linux probe.
  *
- * This binary uses only ARM EABI system calls.  It writes its boot identity
- * and exposes a tiny line-oriented recovery shell through /dev/shadowtrace.
- * The shell is intentionally self-contained: it has no filesystem, NAND,
- * network, dynamic linker, or external process dependency.
+ * This binary uses only ARM EABI system calls.  It writes its boot identity,
+ * attaches /dev/shadowtrace to the three standard descriptors, mounts the
+ * RAM-backed pseudo-filesystems, and execs a static BusyBox shell.  The tiny
+ * built-in command loop remains as a recovery fallback if BusyBox cannot be
+ * executed.
  */
 
 #define SHADOW_SYS_READ		3
 #define SHADOW_SYS_WRITE	4
 #define SHADOW_SYS_OPEN		5
+#define SHADOW_SYS_EXECVE	11
+#define SHADOW_SYS_MOUNT	21
+#define SHADOW_SYS_DUP2		63
 #define SHADOW_SYS_IOCTL	54
 #define SHADOW_SYS_UNAME	122
 #define SHADOW_SYS_SCHED_YIELD	158
@@ -70,6 +74,24 @@ static long shadow_syscall3(long number, long argument0, long argument1,
 		"svc 0"
 		: "+r" (r0)
 		: "r" (r1), "r" (r2), "r" (r7)
+		: "memory");
+	return r0;
+}
+
+static long shadow_syscall5(long number, long argument0, long argument1,
+			    long argument2, long argument3, long argument4)
+{
+	register long r0 asm("r0") = argument0;
+	register long r1 asm("r1") = argument1;
+	register long r2 asm("r2") = argument2;
+	register long r3 asm("r3") = argument3;
+	register long r4 asm("r4") = argument4;
+	register long r7 asm("r7") = number;
+
+	asm volatile(
+		"svc 0"
+		: "+r" (r0)
+		: "r" (r1), "r" (r2), "r" (r3), "r" (r4), "r" (r7)
 		: "memory");
 	return r0;
 }
@@ -177,6 +199,65 @@ static void shadow_show_hardware(long descriptor)
 		"NAND    : untouched and not mounted\r\n");
 }
 
+static void shadow_try_busybox(long descriptor)
+{
+	static char *const arguments[] = {
+		"/bin/busybox", "sh", "-i", 0,
+	};
+	static char *const environment[] = {
+		"HOME=/root",
+		"PATH=/bin:/sbin:/usr/bin:/usr/sbin",
+		"PS1=shadow-msm# ",
+		"SHELL=/bin/sh",
+		"USER=root",
+		"LOGNAME=root",
+		"TERM=dumb",
+		0,
+	};
+	long result;
+	unsigned int standard_descriptor;
+
+	shadow_write_text(
+		descriptor,
+		"Shadow-MSM: attaching BusyBox to /dev/shadowtrace\r\n");
+	for (standard_descriptor = 0; standard_descriptor < 3;
+	     standard_descriptor++) {
+		result = shadow_syscall2(
+			SHADOW_SYS_DUP2, descriptor, standard_descriptor);
+		if (result < 0) {
+			shadow_write_text(
+				descriptor,
+				"Shadow-MSM: standard-descriptor setup failed; "
+				"using recovery shell\r\n");
+			return;
+		}
+	}
+	/* All three mounts are volatile and optional. */
+	shadow_syscall5(
+		SHADOW_SYS_MOUNT,
+		(long)"proc", (long)"/proc", (long)"proc", 0, 0);
+	shadow_syscall5(
+		SHADOW_SYS_MOUNT,
+		(long)"sysfs", (long)"/sys", (long)"sysfs", 0, 0);
+	shadow_syscall5(
+		SHADOW_SYS_MOUNT,
+		(long)"tmpfs", (long)"/tmp", (long)"tmpfs", 0, 0);
+
+	shadow_write_text(
+		1,
+		"Shadow-MSM: starting static BusyBox ARMv5 shell\r\n");
+	result = shadow_syscall3(
+		SHADOW_SYS_EXECVE,
+		(long)arguments[0],
+		(long)arguments,
+		(long)environment);
+	shadow_write_text(
+		1,
+		"Shadow-MSM: BusyBox exec failed; recovery shell active (error ");
+	shadow_write_unsigned(1, result < 0 ? (unsigned long)-result : 0);
+	shadow_write_text(1, ")\r\n");
+}
+
 static void shadow_run_command(long descriptor, const char *line,
 			       const struct shadow_utsname *identity)
 {
@@ -279,9 +360,10 @@ void _start(void)
 				"Shadow-MSM: machine  ",
 				identity.machine);
 		}
+		shadow_try_busybox(descriptor);
 		shadow_write_text(
 			descriptor,
-			"Shadow-MSM: interactive PID 1 ready\r\n"
+			"Shadow-MSM: interactive recovery PID 1 ready\r\n"
 			"Type 'help' for commands.\r\n"
 			"shadow-msm# ");
 	}

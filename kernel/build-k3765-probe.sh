@@ -3,20 +3,26 @@
 
 set -euo pipefail
 
-if [[ $# -lt 1 || $# -gt 2 ]]; then
-	echo "usage: $0 <linux-v6.1-tree> [output-directory]" >&2
+if [[ $# -lt 2 || $# -gt 3 ]]; then
+	echo "usage: $0 <linux-v6.1-tree> <busybox-1.36.1-tree> [output-directory]" >&2
 	exit 2
 fi
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 kernel_tree="$(cd "$1" && pwd)"
-output_root="${2:-"${repo_root}/build/k3765-probe"}"
+busybox_tree="$(cd "$2" && pwd)"
+output_root="${3:-"${repo_root}/build/k3765-probe"}"
 mkdir -p "${output_root}"
 output_root="$(cd "${output_root}" && pwd)"
 kernel_out="${output_root}/kernel"
+busybox_out="${output_root}/busybox"
 artifacts="${output_root}/artifacts"
 bl1_build="${output_root}/bl1"
-mkdir -p "${kernel_out}" "${artifacts}" "${bl1_build}"
+mkdir -p \
+	"${kernel_out}" \
+	"${busybox_out}" \
+	"${artifacts}" \
+	"${bl1_build}"
 python_cmd="${SHADOW_MSM_PYTHON:-python3}"
 
 config_file="${repo_root}/kernel/k3765_probe.config"
@@ -25,8 +31,10 @@ shadow_timer_driver="${repo_root}/kernel/drivers/timer-shadow-msm.c"
 shadow_init_source="${repo_root}/kernel/userspace/shadow-init.c"
 bl1_builder="${repo_root}/work/build_linux_image_bl1.py"
 shadow_init_binary="${output_root}/shadow-init"
+busybox_binary="${busybox_out}/busybox"
 initramfs_list="${output_root}/shadow-initramfs.list"
 initramfs_config="${output_root}/shadow-initramfs.config"
+os_release_file="${output_root}/shadow-msm-os-release"
 
 for patch_file in "${repo_root}"/kernel/patches/*.patch; do
 	if git -C "${kernel_tree}" apply --reverse --check \
@@ -46,6 +54,57 @@ if ! grep -q 'timer-shadow-msm.o' \
 	"${kernel_tree}/drivers/clocksource/Makefile"; then
 	printf '\nobj-$(CONFIG_SHADOW_MSM_EARLY_TRACE) += timer-shadow-msm.o\n' \
 		>> "${kernel_tree}/drivers/clocksource/Makefile"
+fi
+
+# Build a pinned static ARMv5 BusyBox.  It runs entirely from the built-in
+# initramfs; no target storage driver or persistent filesystem is enabled.
+make -C "${busybox_tree}" \
+	O="${busybox_out}" \
+	ARCH=arm \
+	CROSS_COMPILE=arm-linux-gnueabi- \
+	defconfig
+
+set_busybox_bool() {
+	local symbol="$1"
+	local value="$2"
+
+	sed -i \
+		-e "/^${symbol}=.*/d" \
+		-e "/^# ${symbol} is not set$/d" \
+		"${busybox_out}/.config"
+	if [[ "${value}" == "y" ]]; then
+		echo "${symbol}=y" >> "${busybox_out}/.config"
+	else
+		echo "# ${symbol} is not set" >> "${busybox_out}/.config"
+	fi
+}
+
+set_busybox_bool CONFIG_STATIC y
+set_busybox_bool CONFIG_PIE n
+set_busybox_bool CONFIG_ASH y
+set_busybox_bool CONFIG_SH_IS_ASH y
+set_busybox_bool CONFIG_FEATURE_SH_STANDALONE y
+set_busybox_bool CONFIG_FEATURE_SH_NOFORK y
+
+make -C "${busybox_tree}" \
+	O="${busybox_out}" \
+	ARCH=arm \
+	CROSS_COMPILE=arm-linux-gnueabi- \
+	olddefconfig
+make -C "${busybox_tree}" \
+	O="${busybox_out}" \
+	ARCH=arm \
+	CROSS_COMPILE=arm-linux-gnueabi- \
+	-j"$(nproc)"
+
+arm-linux-gnueabi-readelf -h "${busybox_binary}" |
+	grep -Eq 'Machine:[[:space:]]+ARM'
+arm-linux-gnueabi-readelf -h "${busybox_binary}" |
+	grep -Eq 'Type:[[:space:]]+EXEC'
+if arm-linux-gnueabi-readelf -l "${busybox_binary}" |
+	grep -q 'INTERP'; then
+	echo "BusyBox unexpectedly contains a dynamic interpreter" >&2
+	exit 1
 fi
 
 arm-linux-gnueabi-gcc \
@@ -81,11 +140,46 @@ if arm-linux-gnueabi-readelf -l "${shadow_init_binary}" |
 	exit 1
 fi
 
+cat > "${os_release_file}" <<'EOF'
+NAME="Shadow-MSM"
+ID=shadow-msm
+VERSION="0.1 RAM-only"
+PRETTY_NAME="Shadow-MSM 0.1 RAM-only"
+HOME_URL="https://github.com/Flashbang-Time/Shadow-MSM"
+EOF
+
 printf '%s\n' \
+	'dir /bin 0755 0 0' \
 	'dir /dev 0755 0 0' \
+	'dir /etc 0755 0 0' \
+	'dir /mnt 0755 0 0' \
+	'dir /proc 0555 0 0' \
+	'dir /root 0700 0 0' \
+	'dir /run 0755 0 0' \
+	'dir /sbin 0755 0 0' \
+	'dir /sys 0555 0 0' \
+	'dir /tmp 1777 0 0' \
+	'dir /usr 0755 0 0' \
+	'dir /usr/bin 0755 0 0' \
+	'dir /usr/sbin 0755 0 0' \
+	'dir /var 0755 0 0' \
+	'nod /dev/null 0666 0 0 c 1 3' \
+	'nod /dev/zero 0666 0 0 c 1 5' \
 	'nod /dev/shadowtrace 0600 0 0 c 240 0' \
 	"file /init ${shadow_init_binary} 0755 0 0" \
+	"file /bin/busybox ${busybox_binary} 0755 0 0" \
+	"file /etc/os-release ${os_release_file} 0644 0 0" \
 	> "${initramfs_list}"
+
+for applet in \
+	'[' '[[' ash awk basename cat chmod clear cp cut date dd df dirname \
+	dmesg du echo env expr false free grep head hexdump hostname id kill \
+	ln ls md5sum mkdir mknod mount mv od pidof printf ps pwd readlink rm \
+	rmdir sed sh sha256sum sleep sort strings sync tail tar test touch tr \
+	true uname uniq uptime wc which whoami xargs; do
+	printf 'slink /bin/%s busybox 0777 0 0\n' "${applet}" \
+		>> "${initramfs_list}"
+done
 printf 'CONFIG_INITRAMFS_SOURCE="%s"\n' "${initramfs_list}" \
 	> "${initramfs_config}"
 
@@ -113,6 +207,9 @@ grep -q '^CONFIG_SHADOW_MSM_EARLY_TRACE=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_AUTO_ZRELADDR=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_BLK_DEV_INITRD=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_BINFMT_ELF=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_PROC_FS=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_SYSFS=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_TMPFS=y$' "${kernel_out}/.config"
 grep -Fqx \
 	"CONFIG_INITRAMFS_SOURCE=\"${initramfs_list}\"" \
 	"${kernel_out}/.config"
@@ -131,6 +228,8 @@ cp "${kernel_out}/.config" "${artifacts}/kernel.config"
 cp "${kernel_out}/vmlinux" "${artifacts}/vmlinux-k3765-probe"
 cp "${kernel_out}/System.map" "${artifacts}/System.map-k3765-probe"
 cp "${shadow_init_binary}" "${artifacts}/shadow-init"
+cp "${busybox_binary}" "${artifacts}/busybox-armv5-static"
+cp "${busybox_out}/.config" "${artifacts}/busybox.config"
 
 # BL1 contains exact sparse fingerprints of the Image. Rebuild it for every
 # kernel artifact so a stale bootloader cannot reject or misidentify a new
@@ -169,7 +268,11 @@ python3 "${repo_root}/kernel/verify_probe.py" \
 	echo "PID 1 size: $(stat -c '%s' "${shadow_init_binary}")"
 	echo "PID 1 SHA256: $(sha256sum "${shadow_init_binary}" | cut -d' ' -f1)"
 	echo "PID 1 device: /dev/shadowtrace (character major 240, minor 0)"
-	echo "PID 1 storage access: none"
+	echo "PID 1 handoff: static BusyBox sh -i with recovery-shell fallback"
+	echo "BusyBox size: $(stat -c '%s' "${busybox_binary}")"
+	echo "BusyBox SHA256: $(sha256sum "${busybox_binary}" | cut -d' ' -f1)"
+	echo "Mounted filesystems: proc, sysfs, tmpfs (all volatile/pseudo)"
+	echo "Persistent storage access: none"
 } >> "${artifacts}/ARTIFACTS.txt"
 
 find "${artifacts}" \

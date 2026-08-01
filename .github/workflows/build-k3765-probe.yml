@@ -28,11 +28,14 @@ jobs:
             bc \
             bison \
             build-essential \
+            bzip2 \
+            curl \
             device-tree-compiler \
             flex \
             gcc-arm-linux-gnueabi \
             git \
             libelf-dev \
+            libc6-dev-armel-cross \
             libssl-dev \
             python3-venv
 
@@ -50,12 +53,23 @@ jobs:
             https://github.com/torvalds/linux.git \
             linux-v6.1
 
+      - name: Fetch and verify official BusyBox 1.36.1
+        run: |
+          curl --fail --location --retry 3 \
+            --output busybox-1.36.1.tar.bz2 \
+            https://busybox.net/downloads/busybox-1.36.1.tar.bz2
+          echo \
+            "b8cc24c9574d809e7279c3be349795c5d5ceb6fdf19ca709f80cde50e47de314  busybox-1.36.1.tar.bz2" \
+            | sha256sum --check --strict
+          tar -xjf busybox-1.36.1.tar.bz2
+
       - name: Build and verify the RAM-only probe
         env:
           SHADOW_MSM_PYTHON: ${{ github.workspace }}/.venv/bin/python
         run: |
           ./kernel/build-k3765-probe.sh \
             ./linux-v6.1 \
+            ./busybox-1.36.1 \
             ./build/k3765-probe
 
       - name: Upload verified probe artifacts

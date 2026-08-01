@@ -78,8 +78,8 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Reached PID 1 `kernel_init_freeable()` on the physical target
 - [x] Completed the generic initcalls and entered built-in ARM userspace
 - [x] Added and physically verified a reattachable RAM-only command shell
+- [ ] Physically verify the static BusyBox initramfs shell
 - [ ] Replace the diagnostic trace path with a normal UART or USB console
-- [ ] Boot a built-in BusyBox initramfs
 - [ ] Add microSD, NAND read-only, USB gadget, and display support
 
 ## Boot architecture
@@ -246,12 +246,14 @@ path, opens `/dev/shadowtrace`, observes hardware timer IRQs, reports
 `Linux 6.1.0-shadow-msm-probe+ / armv5tejl`, and presents a reattachable
 `shadow-msm#` prompt.
 
-The RAM-only probe uses a bidirectional bridge and a small built-in PID 1
-command shell. The monitor accepts host input only through Shadow-MSM command
-`0x1c/0x0e`; its complete live command table is locked to the bounded
-Shadow-MSM handler so the original storage handlers are unreachable. The
-shell provides `help`, `uname`, `hardware`, `status`, `about`, `echo`, and
-`clear` without mounting or accessing NAND.
+The verified RAM-only probe uses a bidirectional bridge and a small built-in
+PID 1 command shell. The next build keeps that shell as a recovery fallback,
+then binds `/dev/shadowtrace` to standard input/output/error and starts a
+pinned, statically linked BusyBox 1.36.1 ARMv5 `ash`. Only `proc`, `sysfs`,
+and RAM-backed `tmpfs` are mounted. The monitor accepts host input only
+through Shadow-MSM command `0x1c/0x0e`; its complete live command table is
+locked to the bounded Shadow-MSM handler so the original storage handlers
+remain unreachable.
 
 After loading the matching monitor and verified kernel bundle, start Linux
 with an interactive terminal by adding `--interactive` to the existing

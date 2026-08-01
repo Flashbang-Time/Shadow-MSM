@@ -42,11 +42,12 @@ that alignment explicit gives a deterministic decompression target of
 
 ## Reproducible build
 
-The GitHub Actions workflow clones the official Linux `v6.1` tag, applies the
-ordered patch series in `patches/`, merges `k3765_probe.config` over
-`multi_v5_defconfig`, builds with the Debian/Ubuntu
-`arm-linux-gnueabi-` toolchain, compiles the probe DTB, and verifies all RAM
-bounds and image headers.
+The GitHub Actions workflow clones the official Linux `v6.1` tag, downloads
+the official BusyBox 1.36.1 source archive and verifies its pinned SHA-256,
+applies the ordered kernel patch series in `patches/`, merges
+`k3765_probe.config` over `multi_v5_defconfig`, builds both components with
+the Debian/Ubuntu `arm-linux-gnueabi-` toolchain, compiles the probe DTB, and
+verifies all RAM bounds and image headers.
 
 Every change under `kernel/` triggers the same clean build; it can also be
 started manually from the repository's Actions page.
@@ -56,9 +57,14 @@ To perform the same build on a Linux host:
 ```bash
 git clone --depth 1 --branch v6.1 \
   https://github.com/torvalds/linux.git linux-v6.1
+curl -LO https://busybox.net/downloads/busybox-1.36.1.tar.bz2
+echo "b8cc24c9574d809e7279c3be349795c5d5ceb6fdf19ca709f80cde50e47de314  busybox-1.36.1.tar.bz2" \
+  | sha256sum --check --strict
+tar -xjf busybox-1.36.1.tar.bz2
 
 ./kernel/build-k3765-probe.sh \
   ./linux-v6.1 \
+  ./busybox-1.36.1 \
   ./build/k3765-probe
 ```
 
@@ -72,6 +78,8 @@ build/k3765-probe/artifacts/
 ├── kernel.config
 ├── vmlinux-k3765-probe
 ├── System.map-k3765-probe
+├── busybox-armv5-static
+├── busybox.config
 ├── early-boot.disasm.txt
 ├── vmlinux.symbols.txt
 ├── ARTIFACTS.txt
@@ -137,7 +145,7 @@ so ARMPRG's borrowed USB routine survives the architecture-wide TLB flush.
 These mappings are strictly diagnostic aids and must be removed from a
 production kernel once a native console is available.
 
-## RAM-only command shell
+## RAM-only command shells
 
 The physically verified source adds a bounded host-input ring at physical `0x008ff800`,
 inside the already-reserved monitor window. `/dev/shadowtrace` polls the
@@ -153,6 +161,12 @@ Supported commands are `help`, `uname`, `hardware`, `status`, `about`,
 `echo`, and `clear`. This is a bring-up/recovery monitor, not yet a BusyBox or
 POSIX shell. The physical K3765-Z accepted all commands, returned live timer
 IRQ counts, and accepted a second host attachment without rebooting Linux.
+
+The next probe retains that command loop as a fallback, but first connects
+`/dev/shadowtrace` to standard input, output, and error and execs a statically
+linked ARMv5 BusyBox `ash`. Its initramfs contains ordinary applet links and
+mounts only `proc`, `sysfs`, and RAM-backed `tmpfs`. This BusyBox handoff is
+build-gated but remains unverified on physical hardware until its first run.
 
 The locally built stage-0 monitor locks all 28 OEM protocol command-table
 entries to the Shadow-MSM callback. That callback validates command `0x1c`
