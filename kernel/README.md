@@ -4,8 +4,8 @@ This directory builds the first deliberately limited Linux handoff probe for
 the ZTE/Vodafone K3765-Z. It targets Linux v6.1 and the ARM926EJ-S CPU in the
 MSM6290.
 
-The resulting image is not expected to reach userspace yet. Its job is to
-prove, with visible milestones, that:
+The resulting image now reaches stable ARM userspace on physical hardware.
+Its visible milestones prove that:
 
 1. BL1 enters the ARM zImage;
 2. the decompressor runs;
@@ -22,6 +22,9 @@ prove, with visible milestones, that:
 13. ARM memory discovery reaches the `paging_init` boundary.
 14. the permanent page tables preserve the resident monitor mapping; and
 15. `paging_init` returns to generic kernel startup.
+16. the recovered 32.768-kHz timer route drives Linux clock events;
+17. the built-in ELF `/init` crosses `execve()` and demand paging; and
+18. PID 1 enters syscalls and remains alive in userspace.
 
 The early trace patch borrows the initialized RAM-resident ARMPRG diagnostic
 string routine only while the MMU is off. The device tree reserves
@@ -40,7 +43,7 @@ that alignment explicit gives a deterministic decompression target of
 ## Reproducible build
 
 The GitHub Actions workflow clones the official Linux `v6.1` tag, applies the
-single patch in `patches/`, merges `k3765_probe.config` over
+ordered patch series in `patches/`, merges `k3765_probe.config` over
 `multi_v5_defconfig`, builds with the Debian/Ubuntu
 `arm-linux-gnueabi-` toolchain, compiles the probe DTB, and verifies all RAM
 bounds and image headers.
@@ -133,6 +136,27 @@ build also temporarily retains the bootstrap identity-mapped device entries
 so ARMPRG's borrowed USB routine survives the architecture-wide TLB flush.
 These mappings are strictly diagnostic aids and must be removed from a
 production kernel once a native console is available.
+
+## RAM-only command shell
+
+The current source adds a one-way host-input ring at physical `0x008ff800`,
+inside the already-reserved monitor window. `/dev/shadowtrace` polls the
+initialized OEM USB receiver only from process context and only while
+temporarily using `init_mm`; timer interrupts remain masked during that small
+window. The freestanding PID 1 reads the device and exposes this prompt:
+
+```text
+shadow-msm#
+```
+
+Supported commands are `help`, `uname`, `hardware`, `status`, `about`,
+`echo`, and `clear`. This is a bring-up/recovery monitor, not yet a BusyBox or
+POSIX shell.
+
+The locally built stage-0 monitor locks all 28 OEM protocol command-table
+entries to the Shadow-MSM callback. That callback validates command `0x1c`
+before handling any subcommand, making the original flash dispatch paths
+unreachable while Linux owns the transport.
 
 No flash driver, NAND command, partition operation, or persistent-storage
 write is part of this build path.

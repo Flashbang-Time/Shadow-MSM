@@ -1472,3 +1472,83 @@ technical reference. The monitor and host loader implement no NAND operation.
   `6bf74efd3a80e0f14db4c902bc3d4b3b8f0dd2bd8c9715acd33356afb68abfcc`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-08-01 - Linux PID 1 reaches stable ARM userspace
+
+- GitHub Actions run
+  [`30709594127`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30709594127)
+  built commit `35560c9` successfully.
+- The downloaded artifact ZIP matched GitHub's published SHA-256 digest
+  `9b5566dbc63c38a6c2b2e738a1ab2106d9ee3c40681f17e543a83d561e0aecff`;
+  all 13 entries listed by the internal `SHA256SUMS` file also matched.
+- The RAM bundle contained the expected host CRC32 values: resident monitor
+  `0xE47D7226`, Image `0x9F9139F4`, BL1 `0x5265B0DB`, and DTB
+  `0x483C3017`. Every downloader RAM packet was acknowledged and stage-0
+  returned GO ACK `0x02`.
+- Moving the failure trace behind the successful-exec test fixed the last
+  artificial crash. Linux completed the PID 1 ELF handoff, resolved the
+  expected first userspace instruction-page fault at `0x00010080`, entered
+  its first syscall, and opened `/dev/shadowtrace`:
+
+  ```text
+  Shadow-MSM: ELF starting PID 1 thread
+  Shadow-MSM: returning to PID 1 userspace
+  Shadow-MSM: PID 1 user prefetch abort
+  Shadow-MSM: prefetch address 0x00010080
+  Shadow-MSM: prefetch IFSR 0x00000005
+  Shadow-MSM: prefetch PC 0x00010080
+  Shadow-MSM: user prefetch abort resolved
+  Shadow-MSM: PID 1 entered its first syscall
+  Shadow-MSM: PID 1 opened /dev/shadowtrace
+  Shadow-MSM: entered freestanding PID 1 userspace
+  Shadow-MSM: hardware timer IRQ observed
+  ```
+
+- PID 1 successfully called `uname()` and reported:
+
+  ```text
+  Linux
+  6.1.0-shadow-msm-probe+
+  armv5tejl
+  ```
+
+- Repeated PID 1 heartbeats continued for the complete bounded 90-second
+  capture. The host stopped listening at its configured time limit and left
+  the target running from RAM.
+- Preserved transfer transcript:
+  `outputs/bundle_pid1_userspace_run_30709594127_20260801.log`.
+- Transfer transcript SHA-256:
+  `20d97ea5e7fd5f7b966a28585943729a8bc2b8bb61cf423602e71879464424ab`.
+- Preserved boot transcript:
+  `outputs/linux_pid1_userspace_run_30709594127_20260801.log`.
+- Boot transcript SHA-256:
+  `d4f741b4e4ed36ae06f4643a58e8aa85f37f681e7579e01cb5d7e601aea8ebf1`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
+
+## Prepared - RAM-only interactive PID 1 bridge
+
+- The stage-0 builder now emits a stock-sized 105,928-byte monitor with
+  SHA-256
+  `588e897f46a3d7dfe4f5f989bcc85ab3b4604b4f7ccacd5d802b53be226f4f52`.
+- All 28 entries in the live OEM command table are replaced with the bounded
+  Shadow-MSM handler at `0x00811374`. The handler validates command `0x1c`
+  before interpreting any subcommand, so the original storage dispatch paths
+  are unreachable.
+- Subcommand `0x0e` copies at most 64 host bytes into a 256-byte ring at
+  physical `0x008ff800`, wholly inside the device tree's reserved monitor
+  window. Its isolated extension occupies `0x00811594..0x00811617`; the
+  active USB receive/output functions beginning at `0x00811778` are byte-for-
+  byte unchanged from the verified OEM programmer.
+- The Linux character driver polls the proven OEM dispatcher only from
+  process context, with IRQs masked and `init_mm` temporarily active. PID 1
+  reads the resulting bytes and implements the prompt `shadow-msm#` with
+  `help`, `uname`, `hardware`, `status`, `about`, `echo`, and `clear`.
+- The host console can forward live terminal lines with `--interactive`, send
+  repeatable scripted lines with `--command`, or reconnect to a running shell
+  with `attach`.
+- Static validation confirmed the HDLC input frame and CRC, locked command
+  table, unchanged active USB functions, mailbox bounds, Python syntax, and
+  whitespace-clean source. Physical-target validation is still pending.
+- No NAND erase, program, partition-table, or persistent-storage command is
+  implemented by this input path.

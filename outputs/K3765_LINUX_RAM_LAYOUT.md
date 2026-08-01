@@ -5,6 +5,7 @@
 | `0x00100000..0x001FFFFF` | Conservatively unused low SDRAM |
 | `0x00200000..0x007FFFFF` | Linux RAM; `Image` starts at `0x00208000` |
 | `0x00800000..0x00819DC7` | RAM-only stage-0/USB monitor |
+| `0x008FF800..0x008FF90B` | RAM-only host-input ring inside the reserved monitor window |
 | `0x01000000..0x0100162C` | BL1 0.2 dry-run image |
 | `0x01200000..0x01EFFFFF` | zImage staging window (13 MiB max) |
 | `0x01F80000..0x01F8FFFF` | DTB reserved window |

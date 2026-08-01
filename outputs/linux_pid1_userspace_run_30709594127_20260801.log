@@ -1,0 +1,172 @@
+K3765-Z BL1 0.4 direct Linux Image boot
+Mode  : validated non-returning Image handoff
+Flash : untouched; RAM execution only
+Input images
+Image size     :
+0x003779B0
+DTB size       :
+0x0000037B
+Host marker     :
+0x494D4731
+Image fingerprints and DTB validation
+Image sparse fingerprints: PASS
+DTB magic      :
+0xEDFE0DD0
+DTB total size :
+0x0000037B
+Linux entry state
+CPSR            :
+0x200000D3
+SCTLR           :
+0x00051078
+PC              :
+0x00208000
+r0              :
+0x00000000
+r1              :
+0xFFFFFFFF
+r2              :
+0x01F80000
+Validation PASS
+LED checkpoint  : blue
+JUMPING DIRECTLY TO DECOMPRESSED LINUX IMAGE
+Shadow-MSM: entered decompressed Linux head.S
+Shadow-MSM: ARM926 processor lookup passed
+Shadow-MSM: initial page tables created
+Shadow-MSM: calling ARM926 processor setup
+Shadow-MSM: entered ARM926 setup
+Shadow-MSM: ARM926 cache invalidate returned
+Shadow-MSM: ARM926 TLB invalidate returned
+Shadow-MSM: ARM926 control word ready
+Shadow-MSM: ARM926 setup returned; enabling MMU next
+Shadow-MSM: MMU enabled; identity execution continues
+Shadow-MSM: entered __mmap_switched at the kernel virtual address
+Shadow-MSM: __mmap_switched cleared BSS
+Shadow-MSM: branching to start_kernel
+Shadow-MSM: entered setup_arch
+Shadow-MSM: setup_processor completed
+Shadow-MSM: device-tree machine selected
+Shadow-MSM: early_mm_init completed
+Shadow-MSM: ARM memblock initialization completed
+Shadow-MSM: entering paging_init
+Shadow-MSM: low bootstrap identity mappings retained
+Shadow-MSM: map_lowmem completed
+Shadow-MSM: permanent kernel mappings completed
+Shadow-MSM: DMA contiguous remap completed
+Shadow-MSM: early fixmap shutdown completed
+Shadow-MSM: vector pages allocated
+Shadow-MSM: early trap vectors initialized
+Shadow-MSM: temporary vmalloc mappings cleared
+Shadow-MSM: static device mappings completed
+Shadow-MSM: PCI I/O reservation completed
+Shadow-MSM: device-map TLB flush completed
+Shadow-MSM: device-map cache flush completed
+Shadow-MSM: asynchronous aborts enabled
+Shadow-MSM: ARM device mappings completed
+Shadow-MSM: permanent kmap tables completed
+Shadow-MSM: TCM initialization completed
+Shadow-MSM: zero page allocated
+Shadow-MSM: bootmem_init completed
+Shadow-MSM: leaving paging_init
+Shadow-MSM: paging_init completed
+Shadow-MSM: MSM6290 timer IRQ route registered
+Shadow-MSM: MSM6290 32.768-kHz clockevent registered
+Shadow-MSM: /dev/shadowtrace process bridge registered
+Shadow-MSM: hardware ZTE K3765-Z / Qualcomm MSM6290
+Shadow-MSM: CPU MIDR 0x41069265
+Shadow-MSM: physical RAM window 0x00000000-0x01FFFFFF
+Shadow-MSM: executing built-in /init
+Shadow-MSM: kernel_execve entered
+Shadow-MSM: kernel_execve arguments staged
+Shadow-MSM: bprm_execve entered
+Shadow-MSM: bprm_execve searching binary handler
+Shadow-MSM: load_elf_binary entered
+Shadow-MSM: ELF program headers loaded
+Shadow-MSM: ELF calling begin_new_exec
+Shadow-MSM: begin_new_exec entered
+Shadow-MSM: begin_new_exec switching mm
+Shadow-MSM: exec_mmap entered
+Shadow-MSM: exec_mmap activating PID 1 mm
+Shadow-MSM: exec_mmap activated PID 1 mm
+Shadow-MSM: begin_new_exec mm switched
+Shadow-MSM: ELF begin_new_exec returned
+Shadow-MSM: ELF setup_new_exec completed
+Shadow-MSM: ELF argument pages installed
+Shadow-MSM: ELF load segments mapped
+Shadow-MSM: ELF userspace tables created
+Shadow-MSM: ELF starting PID 1 thread
+Shadow-MSM: returning to PID 1 userspace
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x00010080
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x00010080
+Shadow-MSM: prefetch SP 0xBEE21F10
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 entered its first syscall
+Shadow-MSM: PID 1 opened /dev/shadowtrace
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: entered freestanding PID 1 userspace
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: hardware timer IRQ observed
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: sysname
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Linux
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: release
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+6.1.0-shadow-msm-probe+
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: machine
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+armv5tejl
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Shadow-MSM: entered shadowtrace write syscall
+Shadow-MSM: userspace trace copy completed
+Shadow-MSM: PID 1 heartbeat
+Maximum capture runtime of 90 seconds reached; target left running.

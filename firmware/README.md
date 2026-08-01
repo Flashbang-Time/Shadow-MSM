@@ -35,8 +35,11 @@ Get-FileHash .\firmware\armprg.bin -Algorithm SHA256
 ```
 
 `armprg.bin` is used only as a hash-verified local build input. The generated
-stage-0 monitor remains RAM-resident, and the current host tools contain no
-NAND erase or program implementation.
+stage-0 monitor remains RAM-resident. Its live 28-entry protocol dispatch
+table is replaced with a single bounded Shadow-MSM handler, which rejects
+every command other than `0x1c`. Linux terminal input uses only subcommand
+`0x0e` and a 256-byte ring inside the device tree's reserved monitor RAM.
+The current host tools contain no NAND erase or program implementation.
 
 The firmware file and generated OEM-derived runtime are ignored by Git. Do
 not force-add either one to a public repository. Only original Shadow-MSM

@@ -22,6 +22,8 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/sched.h>
+#include <linux/sched/signal.h>
 #include <linux/sched_clock.h>
 #include <linux/uaccess.h>
 
@@ -52,6 +54,19 @@ extern struct mm_struct init_mm;
 #define SHADOW_MSM_TRACE_MAJOR		240
 #define SHADOW_MSM_TRACE_CHUNK		96U
 #define SHADOW_MSM_KEEPALIVE_IOCTL	0x534d0001UL
+
+#define SHADOW_MSM_INPUT_MAILBOX	0x008ff800UL
+#define SHADOW_MSM_INPUT_MAGIC		0x534d494eU
+#define SHADOW_MSM_INPUT_RING_SIZE	256U
+#define SHADOW_MSM_INPUT_RING_MASK	(SHADOW_MSM_INPUT_RING_SIZE - 1U)
+#define SHADOW_MSM_INPUT_CHUNK		64U
+
+struct shadow_msm_input_mailbox {
+	u32 magic;
+	u32 head;
+	u32 tail;
+	u8 data[SHADOW_MSM_INPUT_RING_SIZE];
+};
 
 static void __iomem *shadow_irq_base;
 static void __iomem *shadow_timer_base;
@@ -120,6 +135,86 @@ void shadow_msm_diag_emit(const char *message)
 		shadow_msm_set_ttbr(saved_ttbr);
 	local_irq_restore(flags);
 	shadow_msm_watchdog_service();
+}
+
+/*
+ * Run one iteration of the initialized ARMPRG receive/dispatch loop and copy
+ * any host bytes deposited by monitor command 0x1c/0x0e. The mailbox and the
+ * resident runtime are accessed only while init_mm's proven non-cacheable
+ * identity map is active; the caller's normal kernel stack remains mapped in
+ * the upper half of init_mm.
+ */
+static size_t shadow_msm_diag_receive(char *buffer, size_t limit)
+{
+	struct shadow_msm_input_mailbox *mailbox;
+	unsigned long flags;
+	unsigned long saved_ttbr;
+	unsigned long init_ttbr = virt_to_phys(init_mm.pgd);
+	bool borrowed_init_mm;
+	u32 head;
+	u32 tail;
+	size_t count = 0;
+
+	shadow_msm_watchdog_service();
+	local_irq_save(flags);
+	asm volatile(
+		"mrc p15, 0, %0, c2, c0, 0"
+		: "=r" (saved_ttbr));
+
+	borrowed_init_mm =
+		(saved_ttbr & 0xffffc000UL) !=
+		(init_ttbr & 0xffffc000UL);
+	if (borrowed_init_mm)
+		shadow_msm_set_ttbr(init_ttbr);
+
+	((void (*)(void))0x00814214UL)();
+	mailbox = (struct shadow_msm_input_mailbox *)
+		SHADOW_MSM_INPUT_MAILBOX;
+	if (READ_ONCE(mailbox->magic) == SHADOW_MSM_INPUT_MAGIC) {
+		head = READ_ONCE(mailbox->head) & SHADOW_MSM_INPUT_RING_MASK;
+		tail = READ_ONCE(mailbox->tail) & SHADOW_MSM_INPUT_RING_MASK;
+		while (tail != head && count < limit) {
+			buffer[count++] = READ_ONCE(mailbox->data[tail]);
+			tail = (tail + 1U) & SHADOW_MSM_INPUT_RING_MASK;
+		}
+		if (count)
+			WRITE_ONCE(mailbox->tail, tail);
+	}
+
+	if (borrowed_init_mm)
+		shadow_msm_set_ttbr(saved_ttbr);
+	local_irq_restore(flags);
+	shadow_msm_watchdog_service();
+	return count;
+}
+
+static void shadow_msm_diag_input_reset(void)
+{
+	struct shadow_msm_input_mailbox *mailbox;
+	unsigned long flags;
+	unsigned long saved_ttbr;
+	unsigned long init_ttbr = virt_to_phys(init_mm.pgd);
+	bool borrowed_init_mm;
+
+	local_irq_save(flags);
+	asm volatile(
+		"mrc p15, 0, %0, c2, c0, 0"
+		: "=r" (saved_ttbr));
+	borrowed_init_mm =
+		(saved_ttbr & 0xffffc000UL) !=
+		(init_ttbr & 0xffffc000UL);
+	if (borrowed_init_mm)
+		shadow_msm_set_ttbr(init_ttbr);
+
+	mailbox = (struct shadow_msm_input_mailbox *)
+		SHADOW_MSM_INPUT_MAILBOX;
+	WRITE_ONCE(mailbox->head, 0);
+	WRITE_ONCE(mailbox->tail, 0);
+	WRITE_ONCE(mailbox->magic, SHADOW_MSM_INPUT_MAGIC);
+
+	if (borrowed_init_mm)
+		shadow_msm_set_ttbr(saved_ttbr);
+	local_irq_restore(flags);
 }
 
 static __always_inline void shadow_trace(const char *message)
@@ -480,8 +575,6 @@ static ssize_t shadow_trace_write(struct file *file,
 	char message[SHADOW_MSM_TRACE_CHUNK + 1];
 	size_t total = 0;
 
-	shadow_trace("Shadow-MSM: entered shadowtrace write syscall\r\n");
-
 	/*
 	 * The stock monitor routine expects a NUL-terminated string.  Keep each
 	 * copy bounded and invoke it only from this userspace process context.
@@ -492,7 +585,6 @@ static ssize_t shadow_trace_write(struct file *file,
 		if (copy_from_user(message, buffer, count))
 			return total ? (ssize_t)total : -EFAULT;
 		message[count] = '\0';
-		shadow_trace("Shadow-MSM: userspace trace copy completed\r\n");
 		shadow_trace(message);
 
 		buffer += count;
@@ -501,6 +593,34 @@ static ssize_t shadow_trace_write(struct file *file,
 	}
 
 	return total;
+}
+
+static ssize_t shadow_trace_read(struct file *file,
+				 char __user *buffer,
+				 size_t length,
+				 loff_t *position)
+{
+	char message[SHADOW_MSM_INPUT_CHUNK];
+	size_t count;
+
+	if (!length)
+		return 0;
+	length = min_t(size_t, length, sizeof(message));
+
+	for (;;) {
+		count = shadow_msm_diag_receive(message, length);
+		if (count)
+			break;
+		if (file->f_flags & O_NONBLOCK)
+			return -EAGAIN;
+		if (signal_pending(current))
+			return -ERESTARTSYS;
+		schedule_timeout_interruptible(1);
+	}
+
+	if (copy_to_user(buffer, message, count))
+		return -EFAULT;
+	return count;
 }
 
 static long shadow_trace_ioctl(struct file *file,
@@ -516,6 +636,7 @@ static long shadow_trace_ioctl(struct file *file,
 
 static const struct file_operations shadow_trace_operations = {
 	.open = shadow_trace_open,
+	.read = shadow_trace_read,
 	.write = shadow_trace_write,
 	.unlocked_ioctl = shadow_trace_ioctl,
 	.llseek = no_llseek,
@@ -531,9 +652,12 @@ static int __init shadow_trace_device_init(void)
 		&shadow_trace_operations);
 	if (result < 0)
 		return result;
+	shadow_msm_diag_input_reset();
 
 	shadow_trace(
 		"Shadow-MSM: /dev/shadowtrace process bridge registered\r\n");
+	shadow_trace(
+		"Shadow-MSM: RAM-only host input bridge registered\r\n");
 	shadow_trace(
 		"Shadow-MSM: hardware ZTE K3765-Z / Qualcomm MSM6290\r\n");
 	shadow_trace_hex("Shadow-MSM: CPU MIDR ", read_cpuid_id());

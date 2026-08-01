@@ -5,10 +5,14 @@
 
 import argparse
 import binascii
+from collections import deque
 from datetime import datetime
 from pathlib import Path
+import queue
 import re
 import struct
+import sys
+import threading
 import time
 
 import serial
@@ -18,6 +22,8 @@ FLAG = 0x7E
 ESC = 0x7D
 SAFE_RAM_START = 0x01000000
 SAFE_RAM_END = 0x02000000
+INPUT_SUBCOMMAND = 0x0E
+INPUT_PACKET_LIMIT = 64
 
 QUERIES = (
     ("MIDR", 0x01),
@@ -280,6 +286,23 @@ def call_stage2(port, address, r0, r1, r2, on_message=None):
     return int(command(port, 0x0D, args, on_message=on_message), 16)
 
 
+def send_linux_input(port, data):
+    if isinstance(data, str):
+        data = data.encode("ascii", "replace")
+    for offset in range(0, len(data), INPUT_PACKET_LIMIT):
+        chunk = data[offset:offset + INPUT_PACKET_LIMIT]
+        port.write(frame(bytes((0x1C, INPUT_SUBCOMMAND)) + chunk))
+        port.flush()
+
+
+def stdin_reader(lines):
+    try:
+        for line in sys.stdin:
+            lines.put(line)
+    except (EOFError, OSError):
+        return
+
+
 def follow_linux(
     port,
     address,
@@ -289,18 +312,54 @@ def follow_linux(
     on_message,
     idle_timeout,
     max_runtime,
+    interactive=False,
+    initial_commands=(),
+    issue_boot_request=True,
 ):
-    request = stage2_request(port, address, r0, r1, r2)
     port.reset_input_buffer()
-    port.write(request)
-    port.flush()
+    if issue_boot_request:
+        request = stage2_request(port, address, r0, r1, r2)
+        port.write(request)
+        port.flush()
+
+    pending_lines = deque(
+        command.rstrip("\r\n") + "\n" for command in initial_commands
+    )
+    live_lines = queue.Queue()
+    if interactive:
+        threading.Thread(
+            target=stdin_reader,
+            args=(live_lines,),
+            daemon=True,
+        ).start()
+
     start = time.monotonic()
-    idle_deadline = start + idle_timeout
+    idle_deadline = (
+        float("inf") if interactive or idle_timeout <= 0
+        else start + idle_timeout
+    )
     absolute_deadline = (
         start + max_runtime if max_runtime > 0 else float("inf")
     )
+    shell_ready = not issue_boot_request
     while True:
         now = time.monotonic()
+
+        if shell_ready:
+            next_line = None
+            if pending_lines:
+                next_line = pending_lines.popleft()
+            elif interactive:
+                try:
+                    next_line = live_lines.get_nowait()
+                except queue.Empty:
+                    pass
+            if next_line is not None:
+                if not next_line.endswith(("\n", "\r")):
+                    next_line += "\n"
+                send_linux_input(port, next_line)
+                shell_ready = False
+
         if now >= absolute_deadline:
             on_message(
                 f"Maximum capture runtime of {max_runtime:g} seconds reached; "
@@ -314,7 +373,7 @@ def follow_linux(
             payload = read_frame(
                 port,
                 timeout=min(
-                    1.0,
+                    0.1 if interactive else 1.0,
                     idle_deadline - now,
                     absolute_deadline - now,
                 ),
@@ -326,7 +385,10 @@ def follow_linux(
             continue
         text = extract_text(payload)
         on_message(text)
-        idle_deadline = time.monotonic() + idle_timeout
+        if "shadow-msm# " in text:
+            shell_ready = True
+        if not interactive and idle_timeout > 0:
+            idle_deadline = time.monotonic() + idle_timeout
         if re.fullmatch(r"[0-9A-Fa-f]{8}", text):
             return int(text, 16)
 
@@ -340,7 +402,7 @@ def main():
     parser.add_argument("port", help="ARMPRG monitor port, for example COM41")
     parser.add_argument(
         "action",
-        choices=("info", "crc", "verify", "call", "boot", "linux"),
+        choices=("info", "crc", "verify", "call", "boot", "linux", "attach"),
         nargs="?",
         default="info",
     )
@@ -376,6 +438,17 @@ def main():
         default=0x8000,
         help="target CRC chunk size for verify (default: 0x8000)",
     )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="forward terminal input to the RAM-only Linux command shell",
+    )
+    parser.add_argument(
+        "--command",
+        action="append",
+        default=[],
+        help="send one command after the Linux prompt (repeatable)",
+    )
     args = parser.parse_args()
 
     with open_port(args.port) as port:
@@ -399,6 +472,31 @@ def main():
                 args.chunk_size,
             )
             return 0
+        if args.action == "attach":
+            if args.values:
+                raise SystemExit("attach does not take PC/register values")
+            with Path(args.log).open("w", encoding="utf-8", newline="\n") as log:
+                def emit_attached(text):
+                    print(text, end="" if text.endswith("\n") else "\n")
+                    log.write(text)
+                    if not text.endswith("\n"):
+                        log.write("\n")
+                    log.flush()
+
+                follow_linux(
+                    port,
+                    0,
+                    0,
+                    0,
+                    0,
+                    on_message=emit_attached,
+                    idle_timeout=args.idle_timeout,
+                    max_runtime=args.max_runtime,
+                    interactive=True,
+                    initial_commands=args.command,
+                    issue_boot_request=False,
+                )
+            return 0
         if len(args.values) not in (1, 4):
             raise SystemExit(f"{args.action} requires PC [R0 R1 R2]")
         values = list(map(parse_int, args.values))
@@ -420,6 +518,8 @@ def main():
                         on_message=emit_stage2,
                         idle_timeout=args.idle_timeout,
                         max_runtime=args.max_runtime,
+                        interactive=args.interactive,
+                        initial_commands=args.command,
                     )
                     if result is not None:
                         emit_stage2(f"UNEXPECTED RETURN R0: 0x{result:08X}")

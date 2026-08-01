@@ -239,15 +239,41 @@ compiles bounded `Image`, `zImage`, DTB, and symbol artifacts in GitHub
 Actions, and rejects any image that would overlap the resident stage-0
 runtime.
 
-The current hardware trace crosses `start_kernel()`, allocator and RCU setup,
-`rest_init()`, PID 1 creation, and `kthreadd` creation before entering the
-first scheduler call. Static analysis of the exact OEMSBL identified the
-32.768 kHz timer and its interrupt route. The corresponding Linux driver is
-now part of the reproducible build; its first physical-target run is the next
-milestone.
+The physical target now reaches stable ARM userspace. The verified trace from
+commit `35560c9` shows Linux resolving PID 1's first instruction-page fault,
+entering the syscall path, opening `/dev/shadowtrace`, observing hardware timer
+IRQs, reporting `Linux 6.1.0-shadow-msm-probe+ / armv5tejl`, and remaining
+alive for the complete 90-second capture.
 
-This remains a bring-up probe rather than a complete kernel port. It has no
-userspace terminal, storage driver, general USB stack, or production console.
+The next RAM-only probe adds a bidirectional bridge and a small built-in PID 1
+command shell. The monitor accepts host input only through Shadow-MSM command
+`0x1c/0x0e`; its complete live command table is locked to the bounded
+Shadow-MSM handler so the original storage handlers are unreachable. The
+shell provides `help`, `uname`, `hardware`, `status`, `about`, `echo`, and
+`clear` without mounting or accessing NAND.
+
+After loading the matching monitor and verified kernel bundle, start Linux
+with an interactive terminal by adding `--interactive` to the existing
+`linux` command:
+
+```powershell
+py -3.9 .\outputs\k3765_stage0_console.py COMxx linux `
+  0x01000000 IMAGE_SIZE DTB_SIZE 0x494D4731 `
+  --interactive --idle-timeout 0 `
+  --log .\outputs\linux_interactive.log
+```
+
+An already-running interactive build can be reattached without restarting it:
+
+```powershell
+py -3.9 .\outputs\k3765_stage0_console.py COMxx attach `
+  --log .\outputs\linux_attach.log
+```
+
+This remains a bring-up kernel rather than a complete distribution. It still
+uses the resident OEM USB transport, and it has no native USB controller,
+storage, cellular, or production console driver. Every current boot and shell
+component is RAM-resident; power-cycling returns to the stock firmware.
 
 SHA-256 values for the redistributable generated artifacts are recorded in
 [`CHECKSUMS.sha256`](CHECKSUMS.sha256).

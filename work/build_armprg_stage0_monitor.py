@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import hashlib
+import struct
 
 from capstone import Cs, CS_ARCH_ARM, CS_MODE_ARM, CS_MODE_LITTLE_ENDIAN
 from keystone import Ks, KS_ARCH_ARM, KS_MODE_ARM, KS_MODE_LITTLE_ENDIAN
@@ -26,10 +27,28 @@ TRAMPOLINE_OFFSET = TRAMPOLINE_ADDR - STOCK_LOAD_BASE
 # Those handlers are not used by the stage-0 host.
 HANDLER_ADDR = 0x00811374
 HANDLER_OFFSET = HANDLER_ADDR - STOCK_LOAD_BASE
-NEXT_PRESERVED_HANDLER = 0x00811594
-BANNER_ADDR = 0x00811568
+INPUT_HANDLER_ADDR = 0x00811594
+INPUT_HANDLER_OFFSET = INPUT_HANDLER_ADDR - STOCK_LOAD_BASE
+# Command 0x09 is not used by the RAM-only monitor. Reclaim only its isolated
+# handler and helpers, stopping before the active USB vtable function at
+# 0x00811778. Raw pointer and direct-branch scans of the verified programmer
+# show no other callers into this interval.
+NEXT_PRESERVED_FUNCTION = 0x00811778
+BANNER_ADDR = 0x00811768
 BANNER_OFFSET = BANNER_ADDR - STOCK_LOAD_BASE
 BANNER = b"K3765-S0-V1\x00"
+
+# The final reserved monitor page is shared with Linux as a one-way host-input
+# ring. Both sides touch it only through the resident non-cacheable identity
+# mapping, avoiding a cacheable/non-cacheable alias.
+INPUT_MAILBOX_ADDR = 0x008FF800
+INPUT_MAILBOX_MAGIC = 0x534D494E  # "SMIN"
+INPUT_RING_MASK = 0xFF
+INPUT_PACKET_LIMIT = 64
+
+COMMAND_TABLE_ADDR = 0x00819700
+COMMAND_TABLE_OFFSET = COMMAND_TABLE_ADDR - STOCK_LOAD_BASE
+COMMAND_TABLE_ENTRIES = 28
 
 MESSAGE_ADDR = 0x0081763C
 MESSAGE_OFFSET = MESSAGE_ADDR - STOCK_LOAD_BASE
@@ -56,6 +75,7 @@ data = bytearray(stock)
 #   1C 01..0B                    CPU/system-register query
 #   1C 0C <addr:u32> <len:u32>   CRC32 over bounded SDRAM
 #   1C 0D <pc:u32> <r0> <r1> <r2> call bounded ARM second stage
+#   1C 0E <bytes...>              enqueue host input for Linux PID 1
 #
 # All multibyte host fields are little-endian. CRC/call addresses are limited
 # to 0x01000000..0x01FFFFFF. The callback has no NAND command or controller
@@ -63,6 +83,12 @@ data = bytearray(stock)
 asm_source = f"""
     push {{r4, r5, r6, lr}}
     mov r4, r0
+    ldrh r5, [r4, #4]
+    cmp r5, #2
+    blo bad
+    ldrb r5, [r4, #6]
+    cmp r5, #0x1C
+    bne bad
     ldrb r5, [r4, #7]
 
     cmp r5, #0
@@ -93,8 +119,13 @@ asm_source = f"""
     beq crc32_range
     cmp r5, #13
     beq call_stage2
+    cmp r5, #14
+    beq mailbox_input
     ldr r0, =0xBAD00000
     b reply_hex
+
+mailbox_input:
+    b 0x{INPUT_HANDLER_ADDR:08X}
 
 banner:
     ldr r0, =0x{BANNER_ADDR:08X}
@@ -210,10 +241,59 @@ ks = Ks(KS_ARCH_ARM, KS_MODE_ARM + KS_MODE_LITTLE_ENDIAN)
 encoding, _ = ks.asm(asm_source, addr=HANDLER_ADDR)
 handler = bytes(encoding)
 
-if HANDLER_ADDR + len(handler) > NEXT_PRESERVED_HANDLER:
+if HANDLER_ADDR + len(handler) > INPUT_HANDLER_ADDR:
     raise SystemExit(
         f"stage-0 handler is {len(handler)} bytes and overlaps "
-        f"0x{NEXT_PRESERVED_HANDLER:08X}"
+        f"input extension at 0x{INPUT_HANDLER_ADDR:08X}"
+    )
+
+input_source = f"""
+    ldr r0, =0x{INPUT_MAILBOX_ADDR:08X}
+    ldr r1, [r0]
+    ldr r6, =0x{INPUT_MAILBOX_MAGIC:08X}
+    cmp r1, r6
+    beq mailbox_ready
+    str r6, [r0]
+    mov r1, #0
+    str r1, [r0, #4]
+    str r1, [r0, #8]
+
+mailbox_ready:
+    ldrh r2, [r4, #4]
+    cmp r2, #2
+    bls mailbox_done
+    sub r2, r2, #2
+    cmp r2, #{INPUT_PACKET_LIMIT}
+    movhi r2, #{INPUT_PACKET_LIMIT}
+    add r4, r4, #8
+    ldr r3, [r0, #4]
+    ldr r5, [r0, #8]
+
+mailbox_loop:
+    add r6, r3, #1
+    and r6, r6, #0x{INPUT_RING_MASK:02X}
+    cmp r6, r5
+    beq mailbox_commit
+    ldrb r1, [r4], #1
+    add ip, r0, #12
+    strb r1, [ip, r3]
+    mov r3, r6
+    subs r2, r2, #1
+    bne mailbox_loop
+
+mailbox_commit:
+    str r3, [r0, #4]
+
+mailbox_done:
+    mov r0, #0
+    pop {{r4, r5, r6, pc}}
+"""
+input_encoding, _ = ks.asm(input_source, addr=INPUT_HANDLER_ADDR)
+input_handler = bytes(input_encoding)
+if INPUT_HANDLER_ADDR + len(input_handler) > BANNER_ADDR:
+    raise SystemExit(
+        f"input handler is {len(input_handler)} bytes and overlaps "
+        f"banner at 0x{BANNER_ADDR:08X}"
     )
 
 trampoline, _ = ks.asm(f"b 0x{HANDLER_ADDR:08X}", addr=TRAMPOLINE_ADDR)
@@ -221,14 +301,28 @@ trampoline = bytes(trampoline)
 if len(trampoline) != 4:
     raise SystemExit("stage-0 trampoline was not one ARM instruction")
 
-if HANDLER_ADDR + len(handler) > BANNER_ADDR:
-    raise SystemExit("stage-0 handler overlaps immutable banner")
-if BANNER_ADDR + len(BANNER) > NEXT_PRESERVED_HANDLER:
-    raise SystemExit("stage-0 banner overlaps next preserved handler")
+if BANNER_ADDR + len(BANNER) > NEXT_PRESERVED_FUNCTION:
+    raise SystemExit("stage-0 banner overlaps active USB vtable function")
 
 data[TRAMPOLINE_OFFSET : TRAMPOLINE_OFFSET + len(trampoline)] = trampoline
 data[HANDLER_OFFSET : HANDLER_OFFSET + len(handler)] = handler
+data[
+    INPUT_HANDLER_OFFSET : INPUT_HANDLER_OFFSET + len(input_handler)
+] = input_handler
 data[BANNER_OFFSET : BANNER_OFFSET + len(BANNER)] = BANNER
+
+# Remove every path from the live dispatcher to the stock storage handlers.
+# All 28 protocol commands now enter the bounded Shadow-MSM callback, whose
+# first operation rejects every command byte except 0x1c.
+for index in range(COMMAND_TABLE_ENTRIES):
+    offset = COMMAND_TABLE_OFFSET + index * 4
+    original = struct.unpack_from("<I", stock, offset)[0]
+    if not STOCK_LOAD_BASE <= original < STOCK_LOAD_BASE + len(stock):
+        raise SystemExit(
+            f"command table entry {index + 1} is not a verified code pointer: "
+            f"0x{original:08X}"
+        )
+    struct.pack_into("<I", data, offset, HANDLER_ADDR)
 
 old_message = b"Invalid Command\x00"
 if data[MESSAGE_OFFSET : MESSAGE_OFFSET + len(old_message)] != old_message:
@@ -245,6 +339,11 @@ listing = [
     f"0x{ins.address:08X}: {ins.bytes.hex():8} {ins.mnemonic:8} {ins.op_str}"
     for ins in md.disasm(handler, HANDLER_ADDR)
 ]
+listing.extend(("", "input mailbox extension:"))
+listing.extend(
+    f"0x{ins.address:08X}: {ins.bytes.hex():8} {ins.mnemonic:8} {ins.op_str}"
+    for ins in md.disasm(input_handler, INPUT_HANDLER_ADDR)
+)
 DISASSEMBLY.write_text("\n".join(listing) + "\n", encoding="ascii")
 
 changed = [index for index, (a, b) in enumerate(zip(stock, data)) if a != b]
@@ -253,7 +352,14 @@ allowed = set(
 ) | set(
     range(TRAMPOLINE_OFFSET, TRAMPOLINE_OFFSET + len(trampoline))
 ) | set(
+    range(INPUT_HANDLER_OFFSET, INPUT_HANDLER_OFFSET + len(input_handler))
+) | set(
     range(BANNER_OFFSET, BANNER_OFFSET + len(BANNER))
+) | set(
+    range(
+        COMMAND_TABLE_OFFSET,
+        COMMAND_TABLE_OFFSET + COMMAND_TABLE_ENTRIES * 4,
+    )
 ) | set(range(MESSAGE_OFFSET, MESSAGE_OFFSET + len(old_message))) | set(
     ()
 )
@@ -268,5 +374,12 @@ print(
     f"handler_range=0x{HANDLER_ADDR:08X}-"
     f"0x{HANDLER_ADDR + len(handler) - 1:08X}"
 )
+print(f"input_handler_size={len(input_handler)}")
+print(
+    f"input_handler_range=0x{INPUT_HANDLER_ADDR:08X}-"
+    f"0x{INPUT_HANDLER_ADDR + len(input_handler) - 1:08X}"
+)
+print(f"input_mailbox=0x{INPUT_MAILBOX_ADDR:08X}")
+print(f"command_table_entries_locked={COMMAND_TABLE_ENTRIES}")
 print(f"changed_bytes={len(changed)}")
 print(f"sha256={hashlib.sha256(data).hexdigest()}")
