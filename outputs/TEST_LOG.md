@@ -1552,3 +1552,20 @@ technical reference. The monitor and host loader implement no NAND operation.
   whitespace-clean source. Physical-target validation is still pending.
 - No NAND erase, program, partition-table, or persistent-storage command is
   implemented by this input path.
+
+## 2026-08-01 - Interactive PID 1 CI link fix
+
+- GitHub Actions run
+  [`30711476499`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30711476499)
+  compiled commit `f98903a` through the final freestanding PID 1 link step.
+- The linker rejected `shadow-init.c` because decimal formatting used `/` and
+  `%`, causing ARM GCC to emit the unavailable libgcc helper
+  `__aeabi_uidivmod`.
+- The formatter now uses ten fixed decimal place values and bounded
+  subtraction. It contains no division or modulo and therefore needs no ARM
+  EABI arithmetic runtime.
+- Python syntax checks, the stage-0 monitor rebuild, and `git diff --check`
+  pass locally. A full ARM compile remains pending in GitHub Actions because
+  this workstation has no ARM cross-compiler installed.
+- The change only affects RAM-resident PID 1 text formatting; no target or
+  persistent-storage operation was performed.

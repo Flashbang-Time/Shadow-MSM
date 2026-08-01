@@ -20,6 +20,7 @@
 #define SHADOW_KEEPALIVE_IOCTL	0x534d0001UL
 #define SHADOW_LINE_LENGTH	96
 #define SHADOW_INPUT_LENGTH	64
+#define SHADOW_DECIMAL_PLACES	10
 
 struct shadow_utsname {
 	char sysname[SHADOW_UTS_LENGTH];
@@ -127,21 +128,31 @@ static int shadow_starts_with(const char *text, const char *prefix)
 
 static void shadow_write_unsigned(long descriptor, unsigned long value)
 {
-	char reversed[10];
+	static const unsigned long decimal_places[] = {
+		1000000000UL, 100000000UL, 10000000UL, 1000000UL,
+		100000UL, 10000UL, 1000UL, 100UL, 10UL, 1UL,
+	};
 	char result[11];
-	unsigned int count = 0;
 	unsigned int index;
+	unsigned int count = 0;
+	int started = 0;
 
-	if (!value) {
-		shadow_write_text(descriptor, "0");
-		return;
+	/*
+	 * PID 1 is linked without libgcc.  Convert by bounded subtraction so
+	 * ARM GCC cannot introduce the __aeabi_uidivmod runtime helper.
+	 */
+	for (index = 0; index < SHADOW_DECIMAL_PLACES; index++) {
+		unsigned int digit = 0;
+
+		while (value >= decimal_places[index]) {
+			value -= decimal_places[index];
+			digit++;
+		}
+		if (digit || started || index == 9) {
+			result[count++] = '0' + digit;
+			started = 1;
+		}
 	}
-	while (value && count < sizeof(reversed)) {
-		reversed[count++] = '0' + value % 10;
-		value /= 10;
-	}
-	for (index = 0; index < count; index++)
-		result[index] = reversed[count - index - 1];
 	result[count] = '\0';
 	shadow_write_text(descriptor, result);
 }
