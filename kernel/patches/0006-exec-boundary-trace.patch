@@ -1,0 +1,234 @@
+From: Shadow-MSM contributors
+Subject: [PATCH] exec: trace the PID 1 address-space transition
+
+Add bounded diagnostic checkpoints throughout kernel_execve(), ELF loading,
+and both sides of activate_mm(). Each checkpoint also refreshes the exact
+firmware-configured watchdog. This separates failures before the new address
+space is installed from failures caused by the resident transport mapping.
+
+The instrumentation is restricted to the experimental early-trace build and
+PID 1. It is intentionally device-specific and not suitable for a generic
+kernel.
+
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 6a11025..fd604ee 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -46,6 +46,7 @@
+ #include <linux/cred.h>
+ #include <linux/dax.h>
+ #include <linux/uaccess.h>
++#include <linux/shadow_msm_trace.h>
+ #include <asm/param.h>
+ #include <asm/page.h>
+ 
+@@ -844,6 +845,10 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	struct mm_struct *mm;
+ 	struct pt_regs *regs;
+ 
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: load_elf_binary entered\r\n");
++
+ 	retval = -ENOEXEC;
+ 	/* First of all, some simple consistency checks */
+ 	if (memcmp(elf_ex->e_ident, ELFMAG, SELFMAG) != 0)
+@@ -861,6 +866,9 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	elf_phdata = load_elf_phdrs(elf_ex, bprm->file);
+ 	if (!elf_phdata)
+ 		goto out;
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: ELF program headers loaded\r\n");
+ 
+ 	elf_ppnt = elf_phdata;
+ 	for (i = 0; i < elf_ex->e_phnum; i++, elf_ppnt++) {
+@@ -999,9 +1007,15 @@ out_free_interp:
+ 		goto out_free_dentry;
+ 
+ 	/* Flush all traces of the currently running executable */
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: ELF calling begin_new_exec\r\n");
+ 	retval = begin_new_exec(bprm);
+ 	if (retval)
+ 		goto out_free_dentry;
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: ELF begin_new_exec returned\r\n");
+ 
+ 	/* Do this immediately, since STACK_TOP as used in setup_arg_pages
+ 	   may depend on the personality.  */
+@@ -1013,6 +1027,9 @@ out_free_interp:
+ 		current->flags |= PF_RANDOMIZE;
+ 
+ 	setup_new_exec(bprm);
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: ELF setup_new_exec completed\r\n");
+ 
+ 	/* Do this so that we can load the interpreter, if need be.  We will
+ 	   change some of these later */
+@@ -1020,6 +1037,9 @@ out_free_interp:
+ 				 executable_stack);
+ 	if (retval < 0)
+ 		goto out_free_dentry;
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: ELF argument pages installed\r\n");
+ 	
+ 	elf_bss = 0;
+ 	elf_brk = 0;
+@@ -1223,6 +1243,9 @@ out_free_interp:
+ 			elf_brk = k;
+ 		}
+ 	}
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: ELF load segments mapped\r\n");
+ 
+ 	e_entry = elf_ex->e_entry + load_bias;
+ 	phdr_addr += load_bias;
+@@ -1293,6 +1316,9 @@ out_free_interp:
+ 				   e_entry, phdr_addr);
+ 	if (retval < 0)
+ 		goto out;
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: ELF userspace tables created\r\n");
+ 
+ 	mm = current->mm;
+ 	mm->end_code = end_code;
+@@ -1345,6 +1371,9 @@ out_free_interp:
+ #endif
+ 
+ 	finalize_exec(bprm);
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: ELF starting PID 1 thread\r\n");
+ 	START_THREAD(elf_ex, regs, elf_entry, bprm->p);
+ 	retval = 0;
+ out:
+diff --git a/fs/exec.c b/fs/exec.c
+index a0b1f03..2b89d23 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -64,6 +64,7 @@
+ #include <linux/io_uring.h>
+ #include <linux/syscall_user_dispatch.h>
+ #include <linux/coredump.h>
++#include <linux/shadow_msm_trace.h>
+ 
+ #include <linux/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -983,6 +984,9 @@ static int exec_mmap(struct mm_struct *mm)
+ 
+ 	/* Notify parent that we're no longer interested in the old VM */
+ 	tsk = current;
++	if (is_global_init(tsk))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: exec_mmap entered\r\n");
+ 	old_mm = current->mm;
+ 	exec_mm_release(tsk, old_mm);
+ 	if (old_mm)
+@@ -1021,7 +1025,13 @@ static int exec_mmap(struct mm_struct *mm)
+ 	 */
+ 	if (!IS_ENABLED(CONFIG_ARCH_WANT_IRQS_OFF_ACTIVATE_MM))
+ 		local_irq_enable();
++	if (is_global_init(tsk))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: exec_mmap activating PID 1 mm\r\n");
+ 	activate_mm(active_mm, mm);
++	if (is_global_init(tsk))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: exec_mmap activated PID 1 mm\r\n");
+ 	if (IS_ENABLED(CONFIG_ARCH_WANT_IRQS_OFF_ACTIVATE_MM))
+ 		local_irq_enable();
+ 	lru_gen_add_mm(mm);
+@@ -1246,6 +1256,10 @@ int begin_new_exec(struct linux_binprm * bprm)
+ 	struct task_struct *me = current;
+ 	int retval;
+ 
++	if (is_global_init(me))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: begin_new_exec entered\r\n");
++
+ 	/* Once we are committed compute the creds */
+ 	retval = bprm_creds_from_file(bprm);
+ 	if (retval)
+@@ -1291,9 +1305,15 @@ int begin_new_exec(struct linux_binprm * bprm)
+ 	 * Release all of the old mmap stuff
+ 	 */
+ 	acct_arg_size(bprm, 0);
++	if (is_global_init(me))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: begin_new_exec switching mm\r\n");
+ 	retval = exec_mmap(bprm->mm);
+ 	if (retval)
+ 		goto out;
++	if (is_global_init(me))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: begin_new_exec mm switched\r\n");
+ 
+ 	bprm->mm = NULL;
+ 
+@@ -1802,6 +1822,10 @@ static int bprm_execve(struct linux_binprm *bprm,
+ 	struct file *file;
+ 	int retval;
+ 
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: bprm_execve entered\r\n");
++
+ 	retval = prepare_bprm_creds(bprm);
+ 	if (retval)
+ 		return retval;
+@@ -1834,6 +1858,9 @@ static int bprm_execve(struct linux_binprm *bprm,
+ 	if (retval)
+ 		goto out;
+ 
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: bprm_execve searching binary handler\r\n");
+ 	retval = exec_binprm(bprm);
+ 	if (retval < 0)
+ 		goto out;
+@@ -1956,6 +1983,10 @@ int kernel_execve(const char *kernel_filename,
+ 	int fd = AT_FDCWD;
+ 	int retval;
+ 
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: kernel_execve entered\r\n");
++
+ 	/* It is non-sense for kernel threads to call execve */
+ 	if (WARN_ON_ONCE(current->flags & PF_KTHREAD))
+ 		return -EINVAL;
+@@ -1999,6 +2030,9 @@ int kernel_execve(const char *kernel_filename,
+ 	if (retval < 0)
+ 		goto out_free;
+ 
++	if (is_global_init(current))
++		shadow_msm_diag_trace(
++			"Shadow-MSM: kernel_execve arguments staged\r\n");
+ 	retval = bprm_execve(bprm, fd, filename, 0);
+ out_free:
+ 	free_bprm(bprm);
+diff --git a/include/linux/shadow_msm_trace.h b/include/linux/shadow_msm_trace.h
+index af59e7d..28f9efc 100644
+--- a/include/linux/shadow_msm_trace.h
++++ b/include/linux/shadow_msm_trace.h
+@@ -3,9 +3,13 @@
+ #define _LINUX_SHADOW_MSM_TRACE_H
+ 
+ #ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
++void shadow_msm_watchdog_service(void);
++
+ static inline void shadow_msm_diag_trace(const char *message)
+ {
++	shadow_msm_watchdog_service();
+ 	((void (*)(const char *))0x00816cf4UL)(message);
++	shadow_msm_watchdog_service();
+ }
+ 
+ static inline void shadow_msm_diag_hex(const char *prefix,

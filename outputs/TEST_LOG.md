@@ -1320,3 +1320,47 @@ technical reference. The monitor and host loader implement no NAND operation.
   `e5d6cc75e6284f040a5d2388f48bd7ef4d6072b6ca293d4cf9871ee00b07fc30`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-08-01 - preserving the resident PGD entry does not cross exec
+
+- GitHub Actions run
+  [`30460928047`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30460928047)
+  built commit `caaa4e3` successfully.
+- The downloaded ZIP matched GitHub's published SHA-256 digest
+  `08d8d70aa88f1301e51b771bfc4492eec4bfbe3a5c7b06175061a51a73f1d058`;
+  all 13 internal artifact hashes matched.
+- The RAM bundle contained the expected host CRC32 values: Image
+  `0x2BA28106`, BL1 `0xA445CE9B`, and DTB `0x483C3017`. Every downloader RAM
+  packet was acknowledged, stage-0 returned GO ACK `0x02`, and BL1 reported
+  sparse Image and DTB validation `PASS`.
+- Linux again reached:
+
+  ```text
+  Shadow-MSM: MSM6290 timer IRQ route registered
+  Shadow-MSM: MSM6290 32.768-kHz clockevent registered
+  Shadow-MSM: /dev/shadowtrace process bridge registered
+  Shadow-MSM: hardware ZTE K3765-Z / Qualcomm MSM6290
+  Shadow-MSM: CPU MIDR 0x41069265
+  Shadow-MSM: physical RAM window 0x00000000-0x01FFFFFF
+  Shadow-MSM: executing built-in /init
+  ```
+
+- Neither the `ret_to_user` checkpoint nor the first-SVC checkpoint printed.
+  The target reset to its stock COM26/COM30/modem interfaces after the
+  watchdog interval.
+- Copying the single supervisor-only PGD entry for
+  `0x00800000..0x009FFFFF` into the new process address space was therefore
+  insufficient. The next diagnostic traces `kernel_execve()`, ELF loading,
+  `begin_new_exec()`, and both sides of `activate_mm()` to identify the exact
+  failing boundary. Every new diagnostic checkpoint also services the
+  firmware-configured watchdog.
+- Preserved transfer transcript:
+  `outputs/bundle_preserve_runtime_run_30460928047_20260801.log`.
+- Transfer transcript SHA-256:
+  `5372c4f11a89d7b29a7a20e32a5e0b242bc76e0ccaed081118b26586d4a7de7`.
+- Preserved boot transcript:
+  `outputs/linux_preserve_runtime_run_30460928047_20260801.log`.
+- Boot transcript SHA-256:
+  `319a6574aa0911b4ab5ba5941d4f6799794521e9bef37ad77845847798d09f39`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.
