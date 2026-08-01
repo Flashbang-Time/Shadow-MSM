@@ -1409,3 +1409,66 @@ technical reference. The monitor and host loader implement no NAND operation.
   `a121fda497d05aa00498c7578c9c3ac3071f0a107b2c47384df813256851075b`.
 - No NAND erase, program, partition-table, or persistent-storage command was
   sent.
+
+## 2026-08-01 - init page-table bridge crosses exec and exposes success-path trace fault
+
+- GitHub Actions run
+  [`30708684681`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/30708684681)
+  built commit `a290f2b` successfully.
+- The downloaded ZIP matched GitHub's published SHA-256 digest
+  `389dae96ce91f300005282eab380b5bba06a107cf400c03b07316340bec6e455`;
+  all 13 internal artifact hashes matched.
+- A live RAM reader confirmed that the active resident USB function table at
+  `0x00819DC8` points to `0x00819A58`, whose byte-output slot is
+  `0x00811914`. Static disassembly shows that routine servicing the watchdog
+  at physical address `0x8000540C` for each completed frame. This proves that
+  the resident output path requires device mappings outside the one copied
+  low-RAM PGD entry.
+- The RAM bundle contained host CRC32 values Image `0xE966CEE9`, BL1
+  `0x5265B0DB`, and DTB `0x483C3017`. Every downloader RAM packet was
+  acknowledged, stage-0 returned GO ACK `0x02`, and BL1 reported sparse Image
+  and DTB validation `PASS`.
+- The IRQ-masked `init_mm` TTBR bridge worked: diagnostic output survived
+  `activate_mm()` and crossed the complete ELF mapping path:
+
+  ```text
+  Shadow-MSM: exec_mmap activating PID 1 mm
+  Shadow-MSM: exec_mmap activated PID 1 mm
+  Shadow-MSM: begin_new_exec mm switched
+  Shadow-MSM: ELF begin_new_exec returned
+  Shadow-MSM: ELF setup_new_exec completed
+  Shadow-MSM: ELF argument pages installed
+  Shadow-MSM: ELF load segments mapped
+  Shadow-MSM: ELF userspace tables created
+  Shadow-MSM: ELF starting PID 1 thread
+  Shadow-MSM: PID 1 entered do_exit
+  Shadow-MSM: PID 1 exit code 0x0000000B
+  ```
+
+- No user prefetch abort, user data abort, first-return checkpoint, or
+  first-SVC checkpoint preceded the exit. The embedded `/init` is a valid ARM
+  EABI executable with entry `0x00010080` and correctly aligned RX/RW load
+  segments.
+- The remaining fault is an instrumentation ordering bug. After successful
+  `run_init_process()`, the early patch calls the direct low-RAM
+  `shadow_msm_c_trace_hex()` helper to print an "exec failed" message before
+  testing `ret == 0`. PID 1 already owns its private page table, so that
+  supervisor-mode direct jump faults and terminates init with `SIGSEGV`.
+  Patch `0008` moves the success test before the failure-only trace.
+- Preserved transfer transcript:
+  `outputs/bundle_ttbr_bridge_run_30708684681_20260801.log`.
+- Transfer transcript SHA-256:
+  `4f5cc10bbdb758099f0268cf96ac391ec365904d5807e532cfdf12d302376c8a`.
+- Preserved boot transcript:
+  `outputs/linux_ttbr_bridge_run_30708684681_20260801.log`.
+- Boot transcript SHA-256:
+  `baf66ed118c7257f03e65709186261425fbb15574345ddaa580813d564fae605`.
+- Preserved live USB-vtable transcripts:
+  `outputs/usb_vtable_probe_load_20260801.log` and
+  `outputs/usb_vtable_probe_results_20260801.log`.
+- Their SHA-256 values are
+  `662d425b996f0f3f418852943ccd0d5378f9533a763bdebf45f87ea7b6f3c037`
+  and
+  `6bf74efd3a80e0f14db4c902bc3d4b3b8f0dd2bd8c9715acd33356afb68abfcc`.
+- No NAND erase, program, partition-table, or persistent-storage command was
+  sent.

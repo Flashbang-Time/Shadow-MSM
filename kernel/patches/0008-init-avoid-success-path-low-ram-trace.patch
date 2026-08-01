@@ -1,0 +1,33 @@
+From: Shadow-MSM contributors
+Subject: [PATCH] init: avoid low-RAM trace after successful exec
+
+run_init_process() returning zero means the built-in ELF has been installed
+successfully and PID 1 now owns a private userspace page table.  The old
+diagnostic ordering nevertheless called shadow_msm_c_trace_hex() before
+testing that return value.  Unlike the later diagnostic bridge, this early
+helper jumps directly into the identity-mapped resident runtime, so the
+success-path call raises a supervisor prefetch abort and kills PID 1 with
+SIGSEGV before its first userspace return.
+
+Test success before emitting the failure-only message.  Failed exec attempts
+still retain their diagnostic, while successful exec proceeds directly to
+ret_from_fork and userspace.
+
+diff --git a/init/main.c b/init/main.c
+--- a/init/main.c
++++ b/init/main.c
+@@ -1909,12 +1909,12 @@ static int __ref kernel_init(void *unused)
+ #endif
+ 		ret = run_init_process(ramdisk_execute_command);
++		if (!ret)
++			return 0;
+ #ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
+ 		shadow_msm_c_trace_hex(
+ 			"Shadow-MSM: built-in /init exec failed ",
+ 			(unsigned long)ret);
+ #endif
+-		if (!ret)
+-			return 0;
+ 		pr_err("Failed to execute %s (error %d)\n",
+ 		       ramdisk_execute_command, ret);
+ 	}
