@@ -333,7 +333,7 @@ Contributions are welcome, especially:
 
 - confirmed MSM6246/MSM6275/MSM6280/MSM6290 register information;
 - UART pin-mux and test-pad identification;
-- timer, interrupt-controller, clock, GPIO, and USB documentation;
+- timer, interrupt-controller, clock, GPIO, and (especially) USB documentation;
 - reproducible logs from closely related devices;
 - small ARMv5-compatible Linux drivers;
 - review of cache, MMU, and kernel-handoff code.
