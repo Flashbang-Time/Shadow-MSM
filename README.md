@@ -43,7 +43,7 @@ Shadow-MSM takes a deliberately conservative approach:
 | CPU | ARM926EJ-S r0p5, ARMv5TEJ |
 | CPU MIDR | `0x41069265` |
 | RAM | 32 MiB address window |
-| NAND | Hynix `H8ACS0PL0MCR`/`HSACS0PL0MCR` profile |
+| NAND | Hynix `H8ACS0PL0MCR` |
 | NAND geometry | 128 MiB data + 4 MiB OOB |
 | PMIC family | Qualcomm PM6658 |
 | Stock runtime | Qualcomm AMSS over OKL4/Quartz |
