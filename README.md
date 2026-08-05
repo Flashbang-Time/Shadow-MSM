@@ -143,7 +143,7 @@ The complete chronological evidence trail is in
 [`outputs/TEST_LOG.md`](outputs/TEST_LOG.md).
 
 ## Requirements
-Modem needs to have the Diagnostic port enabled via DC-Unlocker 2
+Modem needs to have the Diagnostic port enabled via DC-Unlocker 2 (optional?)
 
 The current development host is Windows. The tools require:
 
