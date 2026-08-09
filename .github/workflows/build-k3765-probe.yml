@@ -67,10 +67,23 @@ jobs:
         env:
           SHADOW_MSM_PYTHON: ${{ github.workspace }}/.venv/bin/python
         run: |
+          set +e
           ./kernel/build-k3765-probe.sh \
             ./linux-v6.1 \
             ./busybox-1.36.1 \
-            ./build/k3765-probe
+            ./build/k3765-probe \
+            > build-k3765-probe.log 2>&1
+          build_status=$?
+          set -e
+          cat build-k3765-probe.log
+          if [[ ${build_status} -ne 0 ]]; then
+            build_error="$(tail -n 35 build-k3765-probe.log)"
+            build_error="${build_error//'%'/'%25'}"
+            build_error="${build_error//$'\r'/'%0D'}"
+            build_error="${build_error//$'\n'/'%0A'}"
+            echo "::error title=Shadow-MSM verified build failed::${build_error}"
+            exit "${build_status}"
+          fi
 
       - name: Upload verified probe artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
