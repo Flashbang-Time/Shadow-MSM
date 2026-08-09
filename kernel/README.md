@@ -176,6 +176,15 @@ links and mounts only `proc`, `sysfs`, and RAM-backed `tmpfs`. This path is
 physically verified: BusyBox ran as PID 1 and UID 0, executed standard Linux
 commands, and remained available through a later host reattachment.
 
+The pending `ttySHM0` build adds a fixed-major Linux TTY and system console
+over that same bounded resident byte transport. A delayed work item polls the
+256-byte input mailbox only from process context and feeds Linux's TTY flip
+buffer. The normal line discipline supplies canonical input, echo, control
+characters, and signals; console and TTY output use the already-proven
+transmitter. `/dev/shadowtrace` remains available if TTY registration or open
+fails. Successfully resolved BusyBox demand-page faults are no longer traced,
+while unhandled userspace faults retain direct diagnostics.
+
 The locally built stage-0 monitor locks all 28 OEM protocol command-table
 entries to the Shadow-MSM callback. That callback validates command `0x1c`
 before handling any subcommand, making the original flash dispatch paths

@@ -25,6 +25,7 @@
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
 #include <linux/sched_clock.h>
+#include <linux/shadow_msm_trace.h>
 #include <linux/uaccess.h>
 
 #include <asm/cputype.h>
@@ -53,8 +54,6 @@ extern struct mm_struct init_mm;
 
 #define SHADOW_MSM_TRACE_MAJOR		240
 #define SHADOW_MSM_TRACE_CHUNK		96U
-#define SHADOW_MSM_KEEPALIVE_IOCTL	0x534d0001UL
-
 #define SHADOW_MSM_INPUT_MAILBOX	0x008ff800UL
 #define SHADOW_MSM_INPUT_MAGIC		0x534d494eU
 #define SHADOW_MSM_INPUT_RING_SIZE	256U
@@ -72,6 +71,7 @@ static void __iomem *shadow_irq_base;
 static void __iomem *shadow_timer_base;
 static struct irq_domain *shadow_irq_domain;
 static DEFINE_RAW_SPINLOCK(shadow_irq_lock);
+static DEFINE_RAW_SPINLOCK(shadow_diag_lock);
 
 static bool shadow_timer_periodic;
 static u32 shadow_timer_period;
@@ -79,9 +79,6 @@ static int shadow_timer_linux_irq;
 static unsigned long shadow_timer_irq_count;
 static bool shadow_user_return_seen;
 static bool shadow_first_syscall_seen;
-
-void shadow_msm_watchdog_service(void);
-void shadow_msm_diag_emit(const char *message);
 
 void shadow_msm_watchdog_service(void)
 {
@@ -118,7 +115,7 @@ void shadow_msm_diag_emit(const char *message)
 	bool borrowed_init_mm;
 
 	shadow_msm_watchdog_service();
-	local_irq_save(flags);
+	raw_spin_lock_irqsave(&shadow_diag_lock, flags);
 	asm volatile(
 		"mrc p15, 0, %0, c2, c0, 0"
 		: "=r" (saved_ttbr));
@@ -133,7 +130,7 @@ void shadow_msm_diag_emit(const char *message)
 
 	if (borrowed_init_mm)
 		shadow_msm_set_ttbr(saved_ttbr);
-	local_irq_restore(flags);
+	raw_spin_unlock_irqrestore(&shadow_diag_lock, flags);
 	shadow_msm_watchdog_service();
 }
 
@@ -144,7 +141,7 @@ void shadow_msm_diag_emit(const char *message)
  * identity map is active; the caller's normal kernel stack remains mapped in
  * the upper half of init_mm.
  */
-static size_t shadow_msm_diag_receive(char *buffer, size_t limit)
+size_t shadow_msm_diag_receive(char *buffer, size_t limit)
 {
 	struct shadow_msm_input_mailbox *mailbox;
 	unsigned long flags;
@@ -156,7 +153,7 @@ static size_t shadow_msm_diag_receive(char *buffer, size_t limit)
 	size_t count = 0;
 
 	shadow_msm_watchdog_service();
-	local_irq_save(flags);
+	raw_spin_lock_irqsave(&shadow_diag_lock, flags);
 	asm volatile(
 		"mrc p15, 0, %0, c2, c0, 0"
 		: "=r" (saved_ttbr));
@@ -183,12 +180,12 @@ static size_t shadow_msm_diag_receive(char *buffer, size_t limit)
 
 	if (borrowed_init_mm)
 		shadow_msm_set_ttbr(saved_ttbr);
-	local_irq_restore(flags);
+	raw_spin_unlock_irqrestore(&shadow_diag_lock, flags);
 	shadow_msm_watchdog_service();
 	return count;
 }
 
-static void shadow_msm_diag_input_reset(void)
+void shadow_msm_diag_input_reset(void)
 {
 	struct shadow_msm_input_mailbox *mailbox;
 	unsigned long flags;
@@ -196,7 +193,7 @@ static void shadow_msm_diag_input_reset(void)
 	unsigned long init_ttbr = virt_to_phys(init_mm.pgd);
 	bool borrowed_init_mm;
 
-	local_irq_save(flags);
+	raw_spin_lock_irqsave(&shadow_diag_lock, flags);
 	asm volatile(
 		"mrc p15, 0, %0, c2, c0, 0"
 		: "=r" (saved_ttbr));
@@ -214,7 +211,13 @@ static void shadow_msm_diag_input_reset(void)
 
 	if (borrowed_init_mm)
 		shadow_msm_set_ttbr(saved_ttbr);
-	local_irq_restore(flags);
+	raw_spin_unlock_irqrestore(&shadow_diag_lock, flags);
+}
+
+unsigned long shadow_msm_keepalive(void)
+{
+	shadow_msm_watchdog_service();
+	return READ_ONCE(shadow_timer_irq_count);
 }
 
 static __always_inline void shadow_trace(const char *message)
@@ -630,8 +633,7 @@ static long shadow_trace_ioctl(struct file *file,
 	if (command != SHADOW_MSM_KEEPALIVE_IOCTL)
 		return -ENOTTY;
 
-	shadow_msm_watchdog_service();
-	return READ_ONCE(shadow_timer_irq_count);
+	return shadow_msm_keepalive();
 }
 
 static const struct file_operations shadow_trace_operations = {

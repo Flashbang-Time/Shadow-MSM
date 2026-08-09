@@ -28,6 +28,7 @@ python_cmd="${SHADOW_MSM_PYTHON:-python3}"
 config_file="${repo_root}/kernel/k3765_probe.config"
 dts_file="${repo_root}/kernel/dts/k3765-z-probe.dts"
 shadow_timer_driver="${repo_root}/kernel/drivers/timer-shadow-msm.c"
+shadow_tty_driver="${repo_root}/kernel/drivers/tty-shadow-msm.c"
 shadow_init_source="${repo_root}/kernel/userspace/shadow-init.c"
 bl1_builder="${repo_root}/work/build_linux_image_bl1.py"
 shadow_init_binary="${output_root}/shadow-init"
@@ -55,6 +56,16 @@ if ! grep -q 'timer-shadow-msm.o' \
 	"${kernel_tree}/drivers/clocksource/Makefile"; then
 	printf '\nobj-$(CONFIG_SHADOW_MSM_EARLY_TRACE) += timer-shadow-msm.o\n' \
 		>> "${kernel_tree}/drivers/clocksource/Makefile"
+fi
+
+# Stage the RAM-only ttySHM0 line-discipline/console bridge.  It reuses only
+# the bounded resident transport and contains no storage operation.
+install -m 0644 \
+	"${shadow_tty_driver}" \
+	"${kernel_tree}/drivers/tty/tty-shadow-msm.c"
+if ! grep -q 'tty-shadow-msm.o' "${kernel_tree}/drivers/tty/Makefile"; then
+	printf '\nobj-$(CONFIG_SHADOW_MSM_EARLY_TRACE) += tty-shadow-msm.o\n' \
+		>> "${kernel_tree}/drivers/tty/Makefile"
 fi
 
 # Build a pinned static ARMv5 BusyBox.  It runs entirely from the built-in
@@ -181,6 +192,7 @@ printf '%s\n' \
 	'dir /var 0755 0 0' \
 	'nod /dev/null 0666 0 0 c 1 3' \
 	'nod /dev/zero 0666 0 0 c 1 5' \
+	'nod /dev/ttySHM0 0600 0 0 c 241 0' \
 	'nod /dev/shadowtrace 0600 0 0 c 240 0' \
 	"file /init ${shadow_init_binary} 0755 0 0" \
 	"file /bin/busybox ${busybox_binary} 0755 0 0" \
@@ -226,6 +238,7 @@ grep -q '^CONFIG_BINFMT_ELF=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_PROC_FS=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_SYSFS=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_TMPFS=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_TTY=y$' "${kernel_out}/.config"
 grep -Fqx \
 	"CONFIG_INITRAMFS_SOURCE=\"${initramfs_list}\"" \
 	"${kernel_out}/.config"
@@ -284,8 +297,9 @@ python3 "${repo_root}/kernel/verify_probe.py" \
 {
 	echo "PID 1 size: $(stat -c '%s' "${shadow_init_binary}")"
 	echo "PID 1 SHA256: $(sha256sum "${shadow_init_binary}" | cut -d' ' -f1)"
-	echo "PID 1 device: /dev/shadowtrace (character major 240, minor 0)"
-	echo "PID 1 handoff: static BusyBox sh -i with recovery-shell fallback"
+	echo "PID 1 device: /dev/ttySHM0 (TTY major 241, minor 0)"
+	echo "PID 1 fallback: /dev/shadowtrace (character major 240, minor 0)"
+	echo "PID 1 handoff: static BusyBox sh -i with TTY and recovery-shell fallback"
 	echo "BusyBox size: $(stat -c '%s' "${busybox_binary}")"
 	echo "BusyBox SHA256: $(sha256sum "${busybox_binary}" | cut -d' ' -f1)"
 	echo "Mounted filesystems: proc, sysfs, tmpfs (all volatile/pseudo)"

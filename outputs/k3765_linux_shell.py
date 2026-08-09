@@ -6,6 +6,7 @@
 import argparse
 import binascii
 from collections import deque
+from contextlib import contextmanager
 import ctypes
 from datetime import datetime
 import hashlib
@@ -54,6 +55,7 @@ SAFE_RAM_END = 0x02000000
 MAX_CHUNK = 0x3F9
 INPUT_SUBCOMMAND = 0x0E
 INPUT_PACKET_LIMIT = 64
+DETACH_INPUT = object()
 BL1_ADDRESS = 0x01000000
 DTB_ADDRESS = 0x01F80000
 LINUX_MARKER = 0x494D4731
@@ -782,10 +784,94 @@ def send_linux_input(port, data):
         port.flush()
 
 
-def stdin_reader(lines):
+@contextmanager
+def raw_console_input():
+    """Put an interactive host terminal into per-key mode, then restore it."""
+    if not sys.stdin.isatty():
+        yield False
+        return
+
+    if os.name == "nt":
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.GetStdHandle(ctypes.c_ulong(-10 & 0xFFFFFFFF))
+        original = ctypes.c_ulong()
+        if handle in (0, -1) or not kernel32.GetConsoleMode(
+            handle, ctypes.byref(original)
+        ):
+            yield False
+            return
+        processed_input = 0x0001
+        line_input = 0x0002
+        echo_input = 0x0004
+        raw_mode = original.value & ~(
+            processed_input | line_input | echo_input
+        )
+        if not kernel32.SetConsoleMode(handle, raw_mode):
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            kernel32.SetConsoleMode(handle, original.value)
+        return
+
+    import termios
+    import tty
+
+    descriptor = sys.stdin.fileno()
+    original = termios.tcgetattr(descriptor)
+    tty.setraw(descriptor)
     try:
+        yield True
+    finally:
+        termios.tcsetattr(descriptor, termios.TCSADRAIN, original)
+
+
+def stdin_reader(chunks, raw_keys):
+    try:
+        if raw_keys and os.name == "nt":
+            import msvcrt
+
+            extended_keys = {
+                "H": b"\x1b[A",
+                "P": b"\x1b[B",
+                "M": b"\x1b[C",
+                "K": b"\x1b[D",
+                "G": b"\x1b[H",
+                "O": b"\x1b[F",
+                "S": b"\x1b[3~",
+            }
+            while True:
+                character = msvcrt.getwch()
+                if character in ("\x00", "\xe0"):
+                    mapped = extended_keys.get(msvcrt.getwch())
+                    if mapped:
+                        chunks.put(mapped)
+                    continue
+                if character == "\x1d":
+                    chunks.put(DETACH_INPUT)
+                    return
+                if character == "\r":
+                    chunks.put(b"\n")
+                elif character == "\x08":
+                    chunks.put(b"\x7f")
+                else:
+                    chunks.put(character.encode("ascii", "replace"))
+            return
+
+        if raw_keys:
+            while True:
+                character = os.read(sys.stdin.fileno(), 1)
+                if not character:
+                    return
+                if character == b"\x1d":
+                    chunks.put(DETACH_INPUT)
+                    return
+                chunks.put(character)
+            return
+
         for line in sys.stdin:
-            lines.put(line)
+            chunks.put(line.encode("ascii", "replace"))
     except (EOFError, OSError):
         return
 
@@ -808,49 +894,64 @@ def follow_linux(
     pending_lines = deque(
         command.rstrip("\r\n") + "\n" for command in initial_commands
     )
-    live_lines = queue.Queue()
-    threading.Thread(target=stdin_reader, args=(live_lines,), daemon=True).start()
-    start = time.monotonic()
-    absolute_deadline = (
-        start + max_runtime if max_runtime > 0 else float("inf")
-    )
-    shell_ready = not issue_boot_request
-    while True:
-        if shell_ready:
-            next_line = None
-            if pending_lines:
-                next_line = pending_lines.popleft()
-            else:
-                try:
-                    next_line = live_lines.get_nowait()
-                except queue.Empty:
-                    pass
-            if next_line is not None:
-                if not next_line.endswith(("\n", "\r")):
-                    next_line += "\n"
-                send_linux_input(port, next_line)
-                shell_ready = False
-        now = time.monotonic()
-        if now >= absolute_deadline:
-            on_message(
-                f"Maximum runtime of {max_runtime:g} seconds reached; "
-                "target left running."
-            )
-            return
-        try:
-            payload = read_frame(
-                port,
-                timeout=min(0.1, absolute_deadline - now),
-            )
-        except (OSError, serial.SerialException) as error:
-            on_message(f"Transport disconnected after handoff: {error}")
-            return
-        if payload is None:
-            continue
-        text = extract_text(payload)
-        on_message(text)
-        if "shadow-msm# " in text:
-            shell_ready = True
+    live_chunks = queue.Queue()
+    with raw_console_input() as raw_keys:
+        threading.Thread(
+            target=stdin_reader,
+            args=(live_chunks, raw_keys),
+            daemon=True,
+        ).start()
+        start = time.monotonic()
+        absolute_deadline = (
+            start + max_runtime if max_runtime > 0 else float("inf")
+        )
+        terminal_ready = not issue_boot_request
+        scripted_ready = not issue_boot_request
+        while True:
+            if terminal_ready:
+                outgoing = None
+                scripted = False
+                if pending_lines and scripted_ready:
+                    outgoing = pending_lines.popleft().encode(
+                        "ascii", "replace"
+                    )
+                    scripted = True
+                elif not pending_lines:
+                    try:
+                        outgoing = live_chunks.get_nowait()
+                    except queue.Empty:
+                        pass
+                if outgoing is DETACH_INPUT:
+                    on_message(
+                        "Host detached with Ctrl+]; Linux remains in RAM."
+                    )
+                    return
+                if outgoing:
+                    send_linux_input(port, outgoing)
+                    if scripted or not raw_keys:
+                        scripted_ready = False
+            now = time.monotonic()
+            if now >= absolute_deadline:
+                on_message(
+                    f"Maximum runtime of {max_runtime:g} seconds reached; "
+                    "target left running."
+                )
+                return
+            try:
+                payload = read_frame(
+                    port,
+                    timeout=min(0.1, absolute_deadline - now),
+                )
+            except (OSError, serial.SerialException) as error:
+                on_message(f"Transport disconnected after handoff: {error}")
+                return
+            if payload is None:
+                continue
+            text = extract_text(payload)
+            on_message(text)
+            if "shadow-msm# " in text:
+                terminal_ready = True
+                scripted_ready = True
 
 
 def run_linux_console(
@@ -1066,7 +1167,7 @@ def main():
 
     print()
     print("Preflight complete. Booting Linux and opening shadow-msm#")
-    print("Type commands normally. Press Ctrl+C to detach; Linux stays in RAM.")
+    print("Type normally. Ctrl+C signals Linux; Ctrl+] detaches the host.")
     try:
         run_linux_console(
             port,

@@ -21,7 +21,7 @@
 		 * Temporary bring-up value: the hardware timer is not registered yet,
 		 * so automatic delay calibration cannot observe advancing jiffies.
 		 */
-		bootargs = "loglevel=8 ignore_loglevel initcall_debug lpj=1000000";
+		bootargs = "console=ttySHM0,115200 loglevel=7 lpj=1000000";
 	};
 
 	/*

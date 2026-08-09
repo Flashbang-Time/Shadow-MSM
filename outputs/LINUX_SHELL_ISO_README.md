@@ -67,10 +67,12 @@ code.
    ```
 
 Standard BusyBox commands such as `uname`, `id`, `ps`, `mount`, `ls`, `cat`,
-`mkdir`, `cp`, `mv`, `rm`, `grep`, and `vi` are available. Press `Ctrl+C` to
-detach without deliberately resetting the target. When the local launcher
-exits, it deletes only its own staged session directory. Logs remain under
-`%LOCALAPPDATA%\Shadow-MSM\logs`.
+`mkdir`, `cp`, `mv`, `rm`, `grep`, and `vi` are available through the
+`ttySHM0` Linux console. Keys are forwarded immediately: `Ctrl+C` signals the
+foreground Linux process, while `Ctrl+]` detaches the host without resetting
+the target. `/dev/shadowtrace` remains a recovery fallback. When the local
+launcher exits, it deletes only its own staged session directory. Logs remain
+under `%LOCALAPPDATA%\Shadow-MSM\logs`.
 
 ## Reattach
 

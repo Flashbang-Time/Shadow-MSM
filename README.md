@@ -80,6 +80,7 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Completed the generic initcalls and entered built-in ARM userspace
 - [x] Added and physically verified a reattachable RAM-only command shell
 - [x] Physically verified the static BusyBox 1.36.1 initramfs shell
+- [ ] Physically verify the `ttySHM0` Linux TTY/console bridge
 - [ ] Replace the diagnostic trace path with a normal UART or USB console
 - [ ] Add microSD, NAND read-only, USB gadget, and display support
 
@@ -256,6 +257,14 @@ The host later reattached to the same live kernel without rebooting it;
 The monitor accepts host input only through Shadow-MSM command `0x1c/0x0e`;
 its complete live command table is locked to the bounded Shadow-MSM handler
 so the original storage handlers remain unreachable.
+
+The next build promotes that byte bridge to a proper Linux TTY named
+`ttySHM0`. Linux then owns canonical input, echo, signal characters, and
+`/dev/console`, while `/dev/shadowtrace` remains an emergency fallback. The
+host tools forward individual keys: `Ctrl+C` is delivered to the foreground
+Linux process and `Ctrl+]` detaches the host without rebooting the target.
+This TTY path is source-complete but remains hardware-unverified until its
+first CI artifact is booted.
 
 After loading the matching monitor and verified kernel bundle, start Linux
 with an interactive terminal by adding `--interactive` to the existing

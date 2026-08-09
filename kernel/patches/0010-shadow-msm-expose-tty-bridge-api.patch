@@ -1,0 +1,50 @@
+From: Shadow-MSM contributors
+Subject: [PATCH] shadow-msm: expose bounded resident transport helpers
+
+The ttySHM0 driver uses the same already-validated resident transport as the
+bring-up character device.  Publish only the three bounded operations needed
+by that driver: receive one mailbox chunk, reset the input ring, and service
+the watchdog while reading the timer IRQ counter.
+
+diff --git a/include/linux/shadow_msm_trace.h b/include/linux/shadow_msm_trace.h
+index 8f61098..ed47f6d 100644
+--- a/include/linux/shadow_msm_trace.h
++++ b/include/linux/shadow_msm_trace.h
+@@ -2,9 +2,16 @@
+ #ifndef _LINUX_SHADOW_MSM_TRACE_H
+ #define _LINUX_SHADOW_MSM_TRACE_H
+ 
++#include <linux/types.h>
++
++#define SHADOW_MSM_KEEPALIVE_IOCTL 0x534d0001UL
++
+ #ifdef CONFIG_SHADOW_MSM_EARLY_TRACE
+ void shadow_msm_watchdog_service(void);
+ void shadow_msm_diag_emit(const char *message);
++size_t shadow_msm_diag_receive(char *buffer, size_t limit);
++void shadow_msm_diag_input_reset(void);
++unsigned long shadow_msm_keepalive(void);
+ 
+ static inline void shadow_msm_diag_trace(const char *message)
+ {
+@@ -36,6 +43,20 @@ static inline void shadow_msm_diag_trace(const char *message)
+ {
+ }
+ 
++static inline size_t shadow_msm_diag_receive(char *buffer, size_t limit)
++{
++	return 0;
++}
++
++static inline void shadow_msm_diag_input_reset(void)
++{
++}
++
++static inline unsigned long shadow_msm_keepalive(void)
++{
++	return 0;
++}
++
+ static inline void shadow_msm_diag_hex(const char *prefix,
+ 				       unsigned long value)
+ {

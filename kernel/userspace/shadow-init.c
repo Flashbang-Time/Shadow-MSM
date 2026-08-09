@@ -3,10 +3,10 @@
  * Minimal freestanding PID 1 for the Shadow-MSM RAM-only Linux probe.
  *
  * This binary uses only ARM EABI system calls.  It writes its boot identity,
- * attaches /dev/shadowtrace to the three standard descriptors, mounts the
- * RAM-backed pseudo-filesystems, and execs a static BusyBox shell.  The tiny
- * built-in command loop remains as a recovery fallback if BusyBox cannot be
- * executed.
+ * attaches /dev/ttySHM0 to the three standard descriptors, mounts the
+ * RAM-backed pseudo-filesystems, and execs a static BusyBox shell.  The old
+ * /dev/shadowtrace bridge and tiny built-in command loop remain as recovery
+ * fallbacks if the TTY or BusyBox cannot be used.
  */
 
 #define SHADOW_SYS_READ		3
@@ -199,7 +199,7 @@ static void shadow_show_hardware(long descriptor)
 		"NAND    : untouched and not mounted\r\n");
 }
 
-static void shadow_try_busybox(long descriptor)
+static void shadow_try_busybox(long descriptor, const char *device)
 {
 	static char *const arguments[] = {
 		"/bin/busybox", "sh", "-i", 0,
@@ -211,15 +211,15 @@ static void shadow_try_busybox(long descriptor)
 		"SHELL=/bin/sh",
 		"USER=root",
 		"LOGNAME=root",
-		"TERM=dumb",
+		"TERM=vt100",
 		0,
 	};
 	long result;
 	unsigned int standard_descriptor;
 
-	shadow_write_text(
-		descriptor,
-		"Shadow-MSM: attaching BusyBox to /dev/shadowtrace\r\n");
+	shadow_write_text(descriptor, "Shadow-MSM: attaching BusyBox to ");
+	shadow_write_text(descriptor, device);
+	shadow_write_text(descriptor, "\r\n");
 	for (standard_descriptor = 0; standard_descriptor < 3;
 	     standard_descriptor++) {
 		result = shadow_syscall2(
@@ -312,12 +312,21 @@ void _start(void)
 	long descriptor;
 	long received;
 	long timer_irq_count;
+	const char *device = "/dev/ttySHM0";
 
 	descriptor = shadow_syscall3(
 		SHADOW_SYS_OPEN,
-		(long)"/dev/shadowtrace",
+		(long)device,
 		SHADOW_O_RDWR,
 		0);
+	if (descriptor < 0) {
+		device = "/dev/shadowtrace";
+		descriptor = shadow_syscall3(
+			SHADOW_SYS_OPEN,
+			(long)device,
+			SHADOW_O_RDWR,
+			0);
+	}
 
 	if (descriptor >= 0) {
 		timer_irq_count = shadow_syscall3(
@@ -360,7 +369,7 @@ void _start(void)
 				"Shadow-MSM: machine  ",
 				identity.machine);
 		}
-		shadow_try_busybox(descriptor);
+		shadow_try_busybox(descriptor, device);
 		shadow_write_text(
 			descriptor,
 			"Shadow-MSM: interactive recovery PID 1 ready\r\n"

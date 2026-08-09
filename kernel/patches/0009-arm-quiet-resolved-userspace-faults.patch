@@ -1,0 +1,81 @@
+From: Shadow-MSM contributors
+Subject: [PATCH] ARM: keep only unhandled userspace fault diagnostics
+
+The first userspace probes traced every demand-page data and prefetch abort.
+That proved the ARM926 fault path, but a static BusyBox shell legitimately
+generates thousands of resolved faults and drowns the interactive console.
+
+Retain the detailed trace for genuinely unhandled aborts.  Successfully
+resolved demand faults return silently through the normal Linux path.
+
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index d6dace8..a1150ef 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -555,26 +555,16 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ {
+ 	const struct fsr_info *inf = fsr_info + fsr_fs(fsr);
+ 
+-	if (user_mode(regs)) {
+-		shadow_msm_diag_trace(
+-			"Shadow-MSM: PID 1 user data abort\r\n");
+-		shadow_msm_diag_hex("Shadow-MSM: data address ", addr);
+-		shadow_msm_diag_hex("Shadow-MSM: data FSR ", fsr);
+-		shadow_msm_diag_hex("Shadow-MSM: data PC ",
+-				    instruction_pointer(regs));
+-		shadow_msm_diag_hex("Shadow-MSM: data SP ", regs->ARM_sp);
+-	}
+-
+-	if (!inf->fn(addr, fsr & ~FSR_LNX_PF, regs)) {
+-		if (user_mode(regs))
+-			shadow_msm_diag_trace(
+-				"Shadow-MSM: user data abort resolved\r\n");
++	if (!inf->fn(addr, fsr & ~FSR_LNX_PF, regs))
+ 		return;
+-	}
+ 
+-	if (user_mode(regs))
++	if (user_mode(regs)) {
++		shadow_msm_diag_hex("Shadow-MSM: unhandled data address ", addr);
++		shadow_msm_diag_hex("Shadow-MSM: unhandled data PC ",
++				    instruction_pointer(regs));
+ 		shadow_msm_diag_trace(
+ 			"Shadow-MSM: user data abort unhandled\r\n");
++	}
+ 
+ 	pr_alert("8<--- cut here ---\n");
+ 	pr_alert("Unhandled fault: %s (0x%03x) at 0x%08lx\n",
+@@ -603,27 +593,16 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+ {
+ 	const struct fsr_info *inf = ifsr_info + fsr_fs(ifsr);
+ 
+-	if (user_mode(regs)) {
+-		shadow_msm_diag_trace(
+-			"Shadow-MSM: PID 1 user prefetch abort\r\n");
+-		shadow_msm_diag_hex("Shadow-MSM: prefetch address ", addr);
+-		shadow_msm_diag_hex("Shadow-MSM: prefetch IFSR ", ifsr);
+-		shadow_msm_diag_hex("Shadow-MSM: prefetch PC ",
+-				    instruction_pointer(regs));
+-		shadow_msm_diag_hex("Shadow-MSM: prefetch SP ",
+-				    regs->ARM_sp);
+-	}
+-
+-	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs)) {
+-		if (user_mode(regs))
+-			shadow_msm_diag_trace(
+-				"Shadow-MSM: user prefetch abort resolved\r\n");
++	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs))
+ 		return;
+-	}
+ 
+-	if (user_mode(regs))
++	if (user_mode(regs)) {
++		shadow_msm_diag_hex("Shadow-MSM: unhandled prefetch address ", addr);
++		shadow_msm_diag_hex("Shadow-MSM: unhandled prefetch PC ",
++				    instruction_pointer(regs));
+ 		shadow_msm_diag_trace(
+ 			"Shadow-MSM: user prefetch abort unhandled\r\n");
++	}
+ 
+ 	pr_alert("Unhandled prefetch abort: %s (0x%03x) at 0x%08lx\n",
+ 		inf->name, ifsr, addr);

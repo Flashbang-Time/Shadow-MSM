@@ -6,8 +6,11 @@
 import argparse
 import binascii
 from collections import deque
+from contextlib import contextmanager
+import ctypes
 from datetime import datetime
 from pathlib import Path
+import os
 import queue
 import re
 import struct
@@ -24,6 +27,7 @@ SAFE_RAM_START = 0x01000000
 SAFE_RAM_END = 0x02000000
 INPUT_SUBCOMMAND = 0x0E
 INPUT_PACKET_LIMIT = 64
+DETACH_INPUT = object()
 
 QUERIES = (
     ("MIDR", 0x01),
@@ -295,10 +299,86 @@ def send_linux_input(port, data):
         port.flush()
 
 
-def stdin_reader(lines):
+@contextmanager
+def raw_console_input(enabled):
+    """Put an interactive host terminal into per-key mode, then restore it."""
+    if not enabled or not sys.stdin.isatty():
+        yield False
+        return
+
+    if os.name == "nt":
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.GetStdHandle(ctypes.c_ulong(-10 & 0xFFFFFFFF))
+        original = ctypes.c_ulong()
+        if handle in (0, -1) or not kernel32.GetConsoleMode(
+            handle, ctypes.byref(original)
+        ):
+            yield False
+            return
+        raw_mode = original.value & ~(0x0001 | 0x0002 | 0x0004)
+        if not kernel32.SetConsoleMode(handle, raw_mode):
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            kernel32.SetConsoleMode(handle, original.value)
+        return
+
+    import termios
+    import tty
+
+    descriptor = sys.stdin.fileno()
+    original = termios.tcgetattr(descriptor)
+    tty.setraw(descriptor)
     try:
+        yield True
+    finally:
+        termios.tcsetattr(descriptor, termios.TCSADRAIN, original)
+
+
+def stdin_reader(chunks, raw_keys):
+    try:
+        if raw_keys and os.name == "nt":
+            import msvcrt
+
+            extended_keys = {
+                "H": b"\x1b[A", "P": b"\x1b[B",
+                "M": b"\x1b[C", "K": b"\x1b[D",
+                "G": b"\x1b[H", "O": b"\x1b[F",
+                "S": b"\x1b[3~",
+            }
+            while True:
+                character = msvcrt.getwch()
+                if character in ("\x00", "\xe0"):
+                    mapped = extended_keys.get(msvcrt.getwch())
+                    if mapped:
+                        chunks.put(mapped)
+                    continue
+                if character == "\x1d":
+                    chunks.put(DETACH_INPUT)
+                    return
+                if character == "\r":
+                    chunks.put(b"\n")
+                elif character == "\x08":
+                    chunks.put(b"\x7f")
+                else:
+                    chunks.put(character.encode("ascii", "replace"))
+            return
+
+        if raw_keys:
+            while True:
+                character = os.read(sys.stdin.fileno(), 1)
+                if not character:
+                    return
+                if character == b"\x1d":
+                    chunks.put(DETACH_INPUT)
+                    return
+                chunks.put(character)
+            return
+
         for line in sys.stdin:
-            lines.put(line)
+            chunks.put(line.encode("ascii", "replace"))
     except (EOFError, OSError):
         return
 
@@ -325,72 +405,85 @@ def follow_linux(
     pending_lines = deque(
         command.rstrip("\r\n") + "\n" for command in initial_commands
     )
-    live_lines = queue.Queue()
-    if interactive:
-        threading.Thread(
-            target=stdin_reader,
-            args=(live_lines,),
-            daemon=True,
-        ).start()
+    live_chunks = queue.Queue()
+    with raw_console_input(interactive) as raw_keys:
+        if interactive:
+            threading.Thread(
+                target=stdin_reader,
+                args=(live_chunks, raw_keys),
+                daemon=True,
+            ).start()
 
-    start = time.monotonic()
-    idle_deadline = (
-        float("inf") if interactive or idle_timeout <= 0
-        else start + idle_timeout
-    )
-    absolute_deadline = (
-        start + max_runtime if max_runtime > 0 else float("inf")
-    )
-    shell_ready = not issue_boot_request
-    while True:
-        now = time.monotonic()
+        start = time.monotonic()
+        idle_deadline = (
+            float("inf") if interactive or idle_timeout <= 0
+            else start + idle_timeout
+        )
+        absolute_deadline = (
+            start + max_runtime if max_runtime > 0 else float("inf")
+        )
+        terminal_ready = not issue_boot_request
+        scripted_ready = not issue_boot_request
+        while True:
+            now = time.monotonic()
 
-        if shell_ready:
-            next_line = None
-            if pending_lines:
-                next_line = pending_lines.popleft()
-            elif interactive:
-                try:
-                    next_line = live_lines.get_nowait()
-                except queue.Empty:
-                    pass
-            if next_line is not None:
-                if not next_line.endswith(("\n", "\r")):
-                    next_line += "\n"
-                send_linux_input(port, next_line)
-                shell_ready = False
+            if terminal_ready:
+                outgoing = None
+                scripted = False
+                if pending_lines and scripted_ready:
+                    outgoing = pending_lines.popleft().encode(
+                        "ascii", "replace"
+                    )
+                    scripted = True
+                elif interactive and not pending_lines:
+                    try:
+                        outgoing = live_chunks.get_nowait()
+                    except queue.Empty:
+                        pass
+                if outgoing is DETACH_INPUT:
+                    on_message(
+                        "Host detached with Ctrl+]; Linux remains in RAM."
+                    )
+                    return None
+                if outgoing:
+                    send_linux_input(port, outgoing)
+                    if scripted or not raw_keys:
+                        scripted_ready = False
 
-        if now >= absolute_deadline:
-            on_message(
-                f"Maximum capture runtime of {max_runtime:g} seconds reached; "
-                "target left running."
-            )
-            return None
-        if now >= idle_deadline:
-            on_message(f"No new target frame for {idle_timeout:g} seconds.")
-            return None
-        try:
-            payload = read_frame(
-                port,
-                timeout=min(
-                    0.1 if interactive else 1.0,
-                    idle_deadline - now,
-                    absolute_deadline - now,
-                ),
-            )
-        except (OSError, serial.SerialException) as error:
-            on_message(f"Transport disconnected after handoff: {error}")
-            return None
-        if payload is None:
-            continue
-        text = extract_text(payload)
-        on_message(text)
-        if "shadow-msm# " in text:
-            shell_ready = True
-        if not interactive and idle_timeout > 0:
-            idle_deadline = time.monotonic() + idle_timeout
-        if re.fullmatch(r"[0-9A-Fa-f]{8}", text):
-            return int(text, 16)
+            if now >= absolute_deadline:
+                on_message(
+                    f"Maximum capture runtime of {max_runtime:g} seconds "
+                    "reached; target left running."
+                )
+                return None
+            if now >= idle_deadline:
+                on_message(
+                    f"No new target frame for {idle_timeout:g} seconds."
+                )
+                return None
+            try:
+                payload = read_frame(
+                    port,
+                    timeout=min(
+                        0.1 if interactive else 1.0,
+                        idle_deadline - now,
+                        absolute_deadline - now,
+                    ),
+                )
+            except (OSError, serial.SerialException) as error:
+                on_message(f"Transport disconnected after handoff: {error}")
+                return None
+            if payload is None:
+                continue
+            text = extract_text(payload)
+            on_message(text)
+            if "shadow-msm# " in text:
+                terminal_ready = True
+                scripted_ready = True
+            if not interactive and idle_timeout > 0:
+                idle_deadline = time.monotonic() + idle_timeout
+            if re.fullmatch(r"[0-9A-Fa-f]{8}", text):
+                return int(text, 16)
 
 
 def parse_int(text):
@@ -441,7 +534,7 @@ def main():
     parser.add_argument(
         "--interactive",
         action="store_true",
-        help="forward terminal input to the RAM-only Linux command shell",
+        help="forward raw terminal input to the RAM-only Linux TTY",
     )
     parser.add_argument(
         "--command",
