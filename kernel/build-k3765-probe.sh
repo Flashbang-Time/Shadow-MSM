@@ -102,7 +102,7 @@ busybox_status=$?
 set -e
 if [[ ${busybox_status} -ne 0 ]]; then
 	tail -n 160 "${busybox_build_log}"
-	busybox_error="$(tail -n 160 "${busybox_build_log}")"
+	busybox_error="$(tail -n 35 "${busybox_build_log}")"
 	busybox_error="${busybox_error//'%'/'%25'}"
 	busybox_error="${busybox_error//$'\r'/'%0D'}"
 	busybox_error="${busybox_error//$'\n'/'%0A'}"
