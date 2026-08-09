@@ -21,7 +21,7 @@ EXPECTED = {
     ),
     "Image-k3765-probe": (
         4_564_500,
-        "60a99e09134738428dd0f3693c5bd2fd72bd8926403d9afc6b0851dab38a974f",
+        "baf6f21f8d3bd295de92a7fe49bac90573e4854fd6d47cefdd369948788251ff",
     ),
     "k3765_bl1_linux_image.bin": (
         5_933,
@@ -208,9 +208,9 @@ def main():
         "Shadow-MSM K3765-Z Linux shell ISO kit\n"
         f"Built: {datetime.now().isoformat(timespec='seconds')}\n"
         f"Source commit: {git_commit()}\n"
-        "Payload source: GitHub Actions run 31330993698\n"
+        "Payload source: GitHub Actions run 31332169413\n"
         "Artifact ZIP SHA-256: "
-        "55d257e6462a8290199f5ff5c8f52f8ed81846c1420e104f16f359d54dfe8dcb\n"
+        "0334e8731a17f7988776459c174e1b334a68100f8da8b6c87ed6efd80e5f451e\n"
         "Linux runtime end: 0x00680D58\n"
         "Runtime-to-monitor gap: 1569448 bytes\n"
         "Runtime persistence: volatile SDRAM only\n"

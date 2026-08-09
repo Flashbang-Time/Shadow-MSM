@@ -85,7 +85,7 @@ PAYLOADS = {
     "image": {
         "name": "Image-k3765-probe",
         "size": 4_564_500,
-        "sha256": "60a99e09134738428dd0f3693c5bd2fd72bd8926403d9afc6b0851dab38a974f",
+        "sha256": "baf6f21f8d3bd295de92a7fe49bac90573e4854fd6d47cefdd369948788251ff",
     },
     "bl1": {
         "name": "k3765_bl1_linux_image.bin",
