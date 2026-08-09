@@ -40,6 +40,11 @@ lowest memory address up to a 2 MiB boundary for phys/virt patching. Making
 that alignment explicit gives a deterministic decompression target of
 `0x00208000` and leaves the first MiB untouched.
 
+The direct `Image` and its BSS must end below `0x00700000`. The verifier derives
+the physical `_end` address from `System.map`, checks that the file/BSS
+boundary agrees with the raw `Image`, and preserves a full 1 MiB guard below
+the monitor at `0x00800000`.
+
 ## Reproducible build
 
 The GitHub Actions workflow clones the official Linux `v6.1` tag, downloads

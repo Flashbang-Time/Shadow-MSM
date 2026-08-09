@@ -3,7 +3,8 @@
 | Address range | Purpose |
 |---|---|
 | `0x00100000..0x001FFFFF` | Conservatively unused low SDRAM |
-| `0x00200000..0x007FFFFF` | Linux RAM; `Image` starts at `0x00208000` |
+| `0x00200000..0x006FFFFF` | Direct Linux image/runtime window; `Image` starts at `0x00208000` |
+| `0x00700000..0x007FFFFF` | Guard below the resident monitor |
 | `0x00800000..0x00819DC7` | RAM-only stage-0/USB monitor |
 | `0x008FF800..0x008FF90B` | RAM-only host-input ring inside the reserved monitor window |
 | `0x01000000..0x0100162C` | BL1 0.2 dry-run image |
@@ -17,5 +18,7 @@ physical base. The probe DT therefore exposes `0x00200000..0x01FFFFFF` and
 leaves the observed first MiB of SDRAM unused. BL1 still enters the compressed
 zImage at `0x01200000`; the decompressor places `Image` at `0x00208000`.
 
-The BL1 0.2 dry-run fixture remains a historical header-parser test and is not
-an executable kernel.
+The direct-image builder and artifact verifier require the complete static
+kernel runtime, including BSS through `_end`, to finish before `0x00700000`.
+This preserves a full 1 MiB guard below stage-0. The BL1 0.2 dry-run fixture
+remains a historical header-parser test and is not an executable kernel.

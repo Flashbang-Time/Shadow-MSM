@@ -12,6 +12,7 @@ import struct
 LINUX_PHYS_BASE = 0x00200000
 LINUX_PHYS_ENTRY = LINUX_PHYS_BASE + 0x00008000
 STAGE0_BASE = 0x00800000
+LINUX_RUNTIME_LIMIT = 0x00700000
 ZIMAGE_STAGE = 0x01200000
 ZIMAGE_LIMIT = 0x00D00000
 DTB_STAGE = 0x01F80000
@@ -36,6 +37,28 @@ def crc32(data):
 
 def align4(value):
     return (value + 3) & ~3
+
+
+def parse_symbols(path):
+    symbols = {}
+    for line_number, line in enumerate(
+        path.read_text(encoding="ascii").splitlines(), start=1
+    ):
+        fields = line.split()
+        if len(fields) != 3:
+            raise SystemExit(
+                f"malformed System.map line {line_number}: {line!r}"
+            )
+        address_text, _kind, name = fields
+        try:
+            address = int(address_text, 16)
+        except ValueError as error:
+            raise SystemExit(
+                f"bad System.map address on line {line_number}: "
+                f"{address_text!r}"
+            ) from error
+        symbols[name] = address
+    return symbols
 
 
 def cstring(data, offset, limit):
@@ -132,12 +155,14 @@ def main():
     parser.add_argument("--zimage", type=Path, required=True)
     parser.add_argument("--image", type=Path, required=True)
     parser.add_argument("--dtb", type=Path, required=True)
+    parser.add_argument("--symbols", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
 
     zimage = args.zimage.read_bytes()
     image = args.image.read_bytes()
     dtb = args.dtb.read_bytes()
+    symbols = parse_symbols(args.symbols)
 
     if len(zimage) > ZIMAGE_LIMIT:
         raise SystemExit("zImage exceeds the 13 MiB staging window")
@@ -145,6 +170,40 @@ def main():
         raise SystemExit("zImage overlaps the DTB staging window")
     if LINUX_PHYS_ENTRY + len(image) > STAGE0_BASE:
         raise SystemExit("decompressed Image would overwrite stage-0")
+
+    required_symbols = ("_text", "__bss_start", "__bss_stop", "_end")
+    missing_symbols = [name for name in required_symbols if name not in symbols]
+    if missing_symbols:
+        raise SystemExit(
+            "System.map is missing required symbols: "
+            + ", ".join(missing_symbols)
+        )
+    if symbols["_text"] != 0xC0008000:
+        raise SystemExit(
+            f"unexpected virtual _text address: 0x{symbols['_text']:08X}"
+        )
+    image_end = LINUX_PHYS_ENTRY + len(image)
+    bss_start = LINUX_PHYS_ENTRY + (
+        symbols["__bss_start"] - symbols["_text"]
+    )
+    bss_stop = LINUX_PHYS_ENTRY + (
+        symbols["__bss_stop"] - symbols["_text"]
+    )
+    runtime_end = LINUX_PHYS_ENTRY + (
+        symbols["_end"] - symbols["_text"]
+    )
+    if bss_start != image_end:
+        raise SystemExit(
+            f"Image/BSS boundary mismatch: file ends at 0x{image_end:08X}, "
+            f"BSS starts at 0x{bss_start:08X}"
+        )
+    if not bss_start <= bss_stop <= runtime_end:
+        raise SystemExit("unexpected BSS/runtime symbol ordering")
+    if runtime_end > LINUX_RUNTIME_LIMIT:
+        raise SystemExit(
+            f"Linux runtime ends at 0x{runtime_end:08X}, beyond guarded "
+            f"limit 0x{LINUX_RUNTIME_LIMIT:08X}"
+        )
     if len(dtb) > DTB_LIMIT:
         raise SystemExit("DTB exceeds its 64 KiB staging window")
 
@@ -182,7 +241,11 @@ def main():
             f"Image size: {len(image)}",
             f"Image SHA256: {sha256(image)}",
             f"Linux physical base: {LINUX_PHYS_BASE:08X}",
-            f"Image physical end: {LINUX_PHYS_ENTRY + len(image):08X}",
+            f"Image physical end: {image_end:08X}",
+            f"BSS physical start: {bss_start:08X}",
+            f"BSS physical end: {bss_stop:08X}",
+            f"Linux runtime end: {runtime_end:08X}",
+            f"Runtime-to-monitor guard: {STAGE0_BASE - runtime_end}",
             f"DTB size: {len(dtb)}",
             f"DTB SHA256: {sha256(dtb)}",
             f"DTB CRC32: {crc32(dtb):08X}",

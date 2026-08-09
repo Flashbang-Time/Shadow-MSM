@@ -278,6 +278,7 @@ python3 "${repo_root}/kernel/verify_probe.py" \
 	--zimage "${artifacts}/zImage-k3765-probe" \
 	--image "${artifacts}/Image-k3765-probe" \
 	--dtb "${artifacts}/k3765-z-probe.dtb" \
+	--symbols "${artifacts}/System.map-k3765-probe" \
 	--report "${artifacts}/ARTIFACTS.txt"
 
 {
