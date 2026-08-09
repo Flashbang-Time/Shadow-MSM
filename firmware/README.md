@@ -41,6 +41,23 @@ every command other than `0x1c`. Linux terminal input uses only subcommand
 `0x0e` and a 256-byte ring inside the device tree's reserved monitor RAM.
 The current host tools contain no NAND erase or program implementation.
 
+## Optional local AMSS analysis
+
+`work/analyze_amss_sdcc.py` can inspect a locally extracted `amss.mbn`
+without adding it to the repository:
+
+```powershell
+py -3.9 .\work\analyze_amss_sdcc.py C:\path\to\amss.mbn `
+  --constant 0xA0400000 --constant 0xA0500000
+```
+
+The matching B04 AMSS contains the legacy `SDCC2 HAL v1.0.12`, `/mmc1`,
+SD/SDHC/MMC detection strings, and both MSM-family SDCC register bases.  The
+first Linux SDCC probe uses those findings only to read controller registers;
+it does not issue card commands, register a block device, mount media, or
+write storage.  Full media support remains disabled until the clock, GPIO,
+card-detect, and interrupt paths are verified independently.
+
 The firmware file and generated OEM-derived runtime are ignored by Git. Do
 not force-add either one to a public repository. Only original Shadow-MSM
 source, documentation, hashes, maps, and user-produced test logs belong in

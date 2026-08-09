@@ -29,6 +29,7 @@ config_file="${repo_root}/kernel/k3765_probe.config"
 dts_file="${repo_root}/kernel/dts/k3765-z-probe.dts"
 shadow_timer_driver="${repo_root}/kernel/drivers/timer-shadow-msm.c"
 shadow_tty_driver="${repo_root}/kernel/drivers/tty-shadow-msm.c"
+shadow_sdcc_probe="${repo_root}/kernel/drivers/sdcc-shadow-msm.c"
 shadow_init_source="${repo_root}/kernel/userspace/shadow-init.c"
 bl1_builder="${repo_root}/work/build_linux_image_bl1.py"
 shadow_init_binary="${output_root}/shadow-init"
@@ -66,6 +67,17 @@ install -m 0644 \
 if ! grep -q 'tty-shadow-msm.o' "${kernel_tree}/drivers/tty/Makefile"; then
 	printf '\nobj-$(CONFIG_SHADOW_MSM_EARLY_TRACE) += tty-shadow-msm.o\n' \
 		>> "${kernel_tree}/drivers/tty/Makefile"
+fi
+
+# Stage the read-only SDCC identification probe.  It reads controller
+# registers only and deliberately does not enable CONFIG_MMC or CONFIG_BLOCK.
+install -m 0644 \
+	"${shadow_sdcc_probe}" \
+	"${kernel_tree}/drivers/clocksource/sdcc-shadow-msm.c"
+if ! grep -q 'sdcc-shadow-msm.o' \
+	"${kernel_tree}/drivers/clocksource/Makefile"; then
+	printf '\nobj-$(CONFIG_SHADOW_MSM_EARLY_TRACE) += sdcc-shadow-msm.o\n' \
+		>> "${kernel_tree}/drivers/clocksource/Makefile"
 fi
 
 # Build a pinned static ARMv5 BusyBox.  It runs entirely from the built-in
@@ -306,6 +318,7 @@ python3 "${repo_root}/kernel/verify_probe.py" \
 	echo "BusyBox SHA256: $(sha256sum "${busybox_binary}" | cut -d' ' -f1)"
 	echo "Mounted filesystems: proc, sysfs, tmpfs (all volatile/pseudo)"
 	echo "Persistent storage access: none"
+	echo "SDCC probe: register reads only; no card command or media access"
 } >> "${artifacts}/ARTIFACTS.txt"
 
 find "${artifacts}" \
