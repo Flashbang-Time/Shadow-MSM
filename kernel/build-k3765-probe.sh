@@ -32,6 +32,7 @@ shadow_init_source="${repo_root}/kernel/userspace/shadow-init.c"
 bl1_builder="${repo_root}/work/build_linux_image_bl1.py"
 shadow_init_binary="${output_root}/shadow-init"
 busybox_binary="${busybox_out}/busybox"
+busybox_build_log="${output_root}/busybox-build.log"
 initramfs_list="${output_root}/shadow-initramfs.list"
 initramfs_config="${output_root}/shadow-initramfs.config"
 os_release_file="${output_root}/shadow-msm-os-release"
@@ -91,11 +92,23 @@ make -C "${busybox_tree}" \
 	ARCH=arm \
 	CROSS_COMPILE=arm-linux-gnueabi- \
 	oldconfig </dev/null
+set +e
 make -C "${busybox_tree}" \
 	O="${busybox_out}" \
 	ARCH=arm \
 	CROSS_COMPILE=arm-linux-gnueabi- \
-	-j1
+	-j1 > "${busybox_build_log}" 2>&1
+busybox_status=$?
+set -e
+if [[ ${busybox_status} -ne 0 ]]; then
+	tail -n 160 "${busybox_build_log}"
+	busybox_error="$(tail -n 160 "${busybox_build_log}")"
+	busybox_error="${busybox_error//'%'/'%25'}"
+	busybox_error="${busybox_error//$'\r'/'%0D'}"
+	busybox_error="${busybox_error//$'\n'/'%0A'}"
+	echo "::error title=BusyBox ARMv5 build failed::${busybox_error}"
+	exit "${busybox_status}"
+fi
 
 arm-linux-gnueabi-readelf -h "${busybox_binary}" |
 	grep -Eq 'Machine:[[:space:]]+ARM'
