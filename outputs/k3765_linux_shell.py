@@ -639,8 +639,15 @@ def extract_text(payload, preserve_line_endings=False):
         raise RuntimeError("target response timeout")
     if payload and payload[0] == 0x0E:
         payload = payload[1:]
-    trailer = b"\x00" if preserve_line_endings else b"\x00\r\n"
-    return payload.rstrip(trailer).decode("ascii", "replace")
+    if preserve_line_endings:
+        # ARMPRG's print wrapper appends one transport LF to every frame.
+        # Remove exactly that byte while preserving a real preceding CR/LF.
+        if payload.endswith(b"\n"):
+            payload = payload[:-1]
+        payload = payload.rstrip(b"\x00")
+    else:
+        payload = payload.rstrip(b"\x00\r\n")
+    return payload.decode("ascii", "replace")
 
 
 def stage0_command(port, subcommand, args=b"", expected=None, on_message=None):
