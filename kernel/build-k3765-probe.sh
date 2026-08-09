@@ -86,6 +86,9 @@ set_busybox_bool CONFIG_ASH y
 set_busybox_bool CONFIG_SH_IS_ASH y
 set_busybox_bool CONFIG_FEATURE_SH_STANDALONE y
 set_busybox_bool CONFIG_FEATURE_SH_NOFORK y
+# The kernel intentionally has CONFIG_NET disabled.  BusyBox tc also relies
+# on legacy CBQ UAPI definitions absent from current Debian cross-headers.
+set_busybox_bool CONFIG_TC n
 
 make -C "${busybox_tree}" \
 	O="${busybox_out}" \
