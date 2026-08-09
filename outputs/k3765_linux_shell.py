@@ -85,13 +85,13 @@ PAYLOADS = {
     "image": {
         "name": "Image-k3765-probe",
         "size": 4_564_500,
-        "sha256": "baf6f21f8d3bd295de92a7fe49bac90573e4854fd6d47cefdd369948788251ff",
+        "sha256": "a6f27a6ed99b5c27b9995308a08f2f4a64182a850930e0b7985352c1bc7c9d9c",
     },
     "bl1": {
         "name": "k3765_bl1_linux_image.bin",
         "size": 5_933,
-        "sha256": "53bba2751e32ee044ced5522eb9676abdd38f76c2637841fd12274c2da2f64cc",
-        "crc32": 0xD26A57AB,
+        "sha256": "6c56c9be59608f37c3b1d1fefae5089159361664f8e65391cc8cbe9763ed4bbf",
+        "crc32": 0x5E7A2FC6,
     },
     "dtb": {
         "name": "k3765-z-probe.dtb",
