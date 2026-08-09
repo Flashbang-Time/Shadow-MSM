@@ -955,7 +955,8 @@ def follow_linux(
             if now >= absolute_deadline:
                 on_message(
                     f"\r\nMaximum runtime of {max_runtime:g} seconds "
-                    "reached; target left running.\r\n"
+                    "reached; target left running. Reattach with "
+                    "ATTACH_SHELL.cmd or --attach.\r\n"
                 )
                 return
             try:
@@ -1060,7 +1061,10 @@ def parse_args():
         "--max-runtime",
         type=float,
         default=0.0,
-        help="maximum shell runtime; zero runs until Ctrl+C",
+        help=(
+            "maximum host attachment time; zero runs until Ctrl+] "
+            "(Ctrl+C is sent to Linux)"
+        ),
     )
     parser.add_argument(
         "--command",

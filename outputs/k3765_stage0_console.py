@@ -474,7 +474,8 @@ def follow_linux(
             if now >= absolute_deadline:
                 on_message(
                     f"\r\nMaximum capture runtime of {max_runtime:g} seconds "
-                    "reached; target left running.\r\n"
+                    "reached; target left running. Reattach with the "
+                    "attach action.\r\n"
                 )
                 return None
             if now >= idle_deadline:
@@ -544,8 +545,8 @@ def main():
         type=float,
         default=0.0,
         help=(
-            "maximum linux log-capture time in seconds; "
-            "zero keeps capturing until idle"
+            "maximum host attachment time in seconds; zero keeps "
+            "capturing until idle or Ctrl+] (Ctrl+C is sent to Linux)"
         ),
     )
     parser.add_argument(
