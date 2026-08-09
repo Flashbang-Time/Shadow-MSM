@@ -634,12 +634,13 @@ def load_ram_bundle(port_name, payloads, log_path):
         handle.write("No persistent-storage command was sent.\n")
 
 
-def extract_text(payload):
+def extract_text(payload, preserve_line_endings=False):
     if payload is None:
         raise RuntimeError("target response timeout")
     if payload and payload[0] == 0x0E:
         payload = payload[1:]
-    return payload.rstrip(b"\x00\r\n").decode("ascii", "replace")
+    trailer = b"\x00" if preserve_line_endings else b"\x00\r\n"
+    return payload.rstrip(trailer).decode("ascii", "replace")
 
 
 def stage0_command(port, subcommand, args=b"", expected=None, on_message=None):
@@ -793,26 +794,39 @@ def raw_console_input():
 
     if os.name == "nt":
         kernel32 = ctypes.windll.kernel32
-        handle = kernel32.GetStdHandle(ctypes.c_ulong(-10 & 0xFFFFFFFF))
-        original = ctypes.c_ulong()
-        if handle in (0, -1) or not kernel32.GetConsoleMode(
-            handle, ctypes.byref(original)
+        input_handle = kernel32.GetStdHandle(ctypes.c_ulong(-10 & 0xFFFFFFFF))
+        output_handle = kernel32.GetStdHandle(ctypes.c_ulong(-11 & 0xFFFFFFFF))
+        input_mode = ctypes.c_ulong()
+        output_mode = ctypes.c_ulong()
+        if input_handle in (0, -1) or not kernel32.GetConsoleMode(
+            input_handle, ctypes.byref(input_mode)
         ):
             yield False
             return
         processed_input = 0x0001
         line_input = 0x0002
         echo_input = 0x0004
-        raw_mode = original.value & ~(
+        raw_mode = input_mode.value & ~(
             processed_input | line_input | echo_input
         )
-        if not kernel32.SetConsoleMode(handle, raw_mode):
+        if not kernel32.SetConsoleMode(input_handle, raw_mode):
             yield False
             return
+        output_changed = (
+            output_handle not in (0, -1)
+            and kernel32.GetConsoleMode(
+                output_handle, ctypes.byref(output_mode)
+            )
+            and kernel32.SetConsoleMode(
+                output_handle, output_mode.value | 0x0004
+            )
+        )
         try:
             yield True
         finally:
-            kernel32.SetConsoleMode(handle, original.value)
+            kernel32.SetConsoleMode(input_handle, input_mode.value)
+            if output_changed:
+                kernel32.SetConsoleMode(output_handle, output_mode.value)
         return
 
     import termios
@@ -923,7 +937,7 @@ def follow_linux(
                         pass
                 if outgoing is DETACH_INPUT:
                     on_message(
-                        "Host detached with Ctrl+]; Linux remains in RAM."
+                        "\r\nHost detached with Ctrl+]; Linux remains in RAM.\r\n"
                     )
                     return
                 if outgoing:
@@ -933,8 +947,8 @@ def follow_linux(
             now = time.monotonic()
             if now >= absolute_deadline:
                 on_message(
-                    f"Maximum runtime of {max_runtime:g} seconds reached; "
-                    "target left running."
+                    f"\r\nMaximum runtime of {max_runtime:g} seconds "
+                    "reached; target left running.\r\n"
                 )
                 return
             try:
@@ -943,11 +957,13 @@ def follow_linux(
                     timeout=min(0.1, absolute_deadline - now),
                 )
             except (OSError, serial.SerialException) as error:
-                on_message(f"Transport disconnected after handoff: {error}")
+                on_message(
+                    f"\r\nTransport disconnected after handoff: {error}\r\n"
+                )
                 return
             if payload is None:
                 continue
-            text = extract_text(payload)
+            text = extract_text(payload, preserve_line_endings=True)
             on_message(text)
             if "shadow-msm# " in text:
                 terminal_ready = True
@@ -965,10 +981,9 @@ def run_linux_console(
         "w", encoding="utf-8", newline="\n"
     ) as log:
         def emit(text):
-            print(text, end="" if text.endswith("\n") else "\n")
+            sys.stdout.write(text)
+            sys.stdout.flush()
             log.write(text)
-            if not text.endswith("\n"):
-                log.write("\n")
             log.flush()
 
         follow_linux(

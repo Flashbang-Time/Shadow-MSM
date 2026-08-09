@@ -185,6 +185,12 @@ transmitter. `/dev/shadowtrace` remains available if TTY registration or open
 fails. Successfully resolved BusyBox demand-page faults are no longer traced,
 while unhandled userspace faults retain direct diagnostics.
 
+The initramfs includes `/dev/console`, `/dev/tty`, and `/dev/ttySHM0`. PID 1
+creates a new session before opening `ttySHM0`, explicitly claims it as the
+controlling TTY, and then duplicates it onto standard input, output, and
+error. This gives BusyBox foreground-process groups and job-control semantics
+instead of merely attaching three character-device descriptors.
+
 The locally built stage-0 monitor locks all 28 OEM protocol command-table
 entries to the Shadow-MSM callback. That callback validates command `0x1c`
 before handling any subcommand, making the original flash dispatch paths

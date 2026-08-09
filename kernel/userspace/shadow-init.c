@@ -15,11 +15,13 @@
 #define SHADOW_SYS_EXECVE	11
 #define SHADOW_SYS_MOUNT	21
 #define SHADOW_SYS_DUP2		63
+#define SHADOW_SYS_SETSID	66
 #define SHADOW_SYS_IOCTL	54
 #define SHADOW_SYS_UNAME	122
 #define SHADOW_SYS_SCHED_YIELD	158
 
 #define SHADOW_O_RDWR		2
+#define SHADOW_TIOCSCTTY	0x540E
 #define SHADOW_UTS_LENGTH	65
 #define SHADOW_KEEPALIVE_IOCTL	0x534d0001UL
 #define SHADOW_LINE_LENGTH	96
@@ -312,14 +314,20 @@ void _start(void)
 	long descriptor;
 	long received;
 	long timer_irq_count;
+	long session_result;
+	long controlling_tty_result = -1;
 	const char *device = "/dev/ttySHM0";
+	int using_tty = 1;
 
+	/* Become a session leader before opening the real console TTY. */
+	session_result = shadow_syscall0(SHADOW_SYS_SETSID);
 	descriptor = shadow_syscall3(
 		SHADOW_SYS_OPEN,
 		(long)device,
 		SHADOW_O_RDWR,
 		0);
 	if (descriptor < 0) {
+		using_tty = 0;
 		device = "/dev/shadowtrace";
 		descriptor = shadow_syscall3(
 			SHADOW_SYS_OPEN,
@@ -327,6 +335,12 @@ void _start(void)
 			SHADOW_O_RDWR,
 			0);
 	}
+	if (descriptor >= 0 && using_tty)
+		controlling_tty_result = shadow_syscall3(
+			SHADOW_SYS_IOCTL,
+			descriptor,
+			SHADOW_TIOCSCTTY,
+			0);
 
 	if (descriptor >= 0) {
 		timer_irq_count = shadow_syscall3(
@@ -337,6 +351,16 @@ void _start(void)
 		shadow_write_text(
 			descriptor,
 			"Shadow-MSM: entered freestanding PID 1 userspace\r\n");
+		if (using_tty && session_result >= 0 &&
+		    controlling_tty_result >= 0)
+			shadow_write_text(
+				descriptor,
+				"Shadow-MSM: controlling ttySHM0 acquired\r\n");
+		else if (using_tty)
+			shadow_write_text(
+				descriptor,
+				"Shadow-MSM: ttySHM0 open; controlling-TTY "
+				"claim failed\r\n");
 		if (timer_irq_count > 0)
 			shadow_write_text(
 				descriptor,

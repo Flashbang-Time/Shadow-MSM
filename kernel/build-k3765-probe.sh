@@ -190,7 +190,9 @@ printf '%s\n' \
 	'dir /usr/bin 0755 0 0' \
 	'dir /usr/sbin 0755 0 0' \
 	'dir /var 0755 0 0' \
+	'nod /dev/console 0600 0 0 c 5 1' \
 	'nod /dev/null 0666 0 0 c 1 3' \
+	'nod /dev/tty 0666 0 0 c 5 0' \
 	'nod /dev/zero 0666 0 0 c 1 5' \
 	'nod /dev/ttySHM0 0600 0 0 c 241 0' \
 	'nod /dev/shadowtrace 0600 0 0 c 240 0' \
