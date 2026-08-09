@@ -1619,3 +1619,54 @@ technical reference. The monitor and host loader implement no NAND operation.
     `c90369c042a7826a32b53df67824d537b1d478de2ffc13ef8466e31cdfa21dbb`
 - The target was left running from RAM after both bounded captures. No NAND
   erase, program, partition-table, or persistent-storage command was sent.
+
+## 2026-08-09 - Static BusyBox shell verified on physical K3765-Z
+
+- GitHub Actions run
+  [`31323294185`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/31323294185)
+  built commit `4c5eff8` successfully. The downloaded artifact ZIP matched
+  GitHub's published SHA-256
+  `4cb5d68fc566847d84cdbac615c0f2831067c053bdb93142784b8bd2f772eaf6`,
+  and every entry in the internal `SHA256SUMS` file matched.
+- The verified direct `Image` is 4,798,896 bytes with SHA-256
+  `a2cb483e5b7b9c22675d594ab054e2457e7a156162839b25cd34df7a1e2579c6`
+  and CRC32 `4EEE7CDF`. Its raw file ends at `0x0069B9B0`, its static runtime
+  ends at `0x006BA858`, and the verifier preserves a 1 MiB guard below the
+  resident monitor at `0x00800000`.
+- The static ARMv5 BusyBox 1.36.1 binary is 2,119,272 bytes with SHA-256
+  `bce9e2d7d9ad6fbdbb0835e06fbd348053d9ff3850d610b4f17d614bd414325c`.
+- The target appeared as `ZTE Diagnostics Interface (COM100)`, VID:PID
+  `19D2:0016`. Every bounded PBL SDRAM packet was acknowledged. Target-side
+  preflight CRC32 matched for BL1 (`AF2CF379`) and the DTB (`483C3017`).
+- Linux booted from SDRAM and PID 1 reported:
+
+  ```text
+  Shadow-MSM: attaching BusyBox to /dev/shadowtrace
+  Shadow-MSM: starting static BusyBox ARMv5 shell
+  Linux (none) 6.1.0-shadow-msm-probe+ #1 Sun Aug 9 16:19:35 UTC 2026 armv5tejl GNU/Linux
+  BusyBox v1.36.1 (2026-08-09 16:16:08 UTC) multi-call binary.
+  uid=0 gid=0
+  ```
+
+- The command suite verified `/etc/os-release`, `pwd`, the root directory,
+  mounts, `/proc/cpuinfo`, `/proc/meminfo`, and the process table. Linux
+  reported 25,728 KiB total RAM; PID 1 was `/bin/busybox sh -i`; and the shell
+  returned `BUSYBOX_COMPLETION_OK`.
+- A separate host process reattached to the still-running kernel. It returned
+  `BUSYBOX_REATTACH_OK`, showed an uptime of more than four minutes, and
+  resolved `/proc/1/exe` to `/bin/busybox`.
+- Preserved transcript SHA-256 values:
+  - `outputs/busybox_v4_bundle_load_run_31323294185_20260809.log`:
+    `338a66c12f0a662f925d2f256bd3c95ba9aea6951b936f026c7bec8d112232c7`
+  - `outputs/busybox_v4_stage0_info_run_31323294185_20260809.log`:
+    `27cc2fda8fa829e01b2011f02ec1bdec5faa95beecf775bef59a14451211ec27`
+  - `outputs/busybox_v4_preflight_crc_run_31323294185_20260809.log`:
+    `887ff05aa88a822b0dc32510950ef974a76eb156543017427f0fffeb5f161eec`
+  - `outputs/busybox_v4_linux_shell_run_31323294185_20260809.log`:
+    `352c6fafa4e32af2a05c581a6af36d6d140621d7e58a378384ed5c901f05e0d4`
+  - `outputs/busybox_v4_linux_reattach_run_31323294185_20260809.log`:
+    `6a6b5576c3ec26acc7bc636a895496e8daebecd4c077a8929764902a22619974`
+- The target remained powered and running from volatile SDRAM after the
+  bounded captures. No NAND erase, program, partition-table, CEFS, or other
+  persistent-storage operation was sent. The on-device `/ZTEMODEM.ISO` was
+  not replaced during this run.

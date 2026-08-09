@@ -16,8 +16,9 @@ and a small second-stage bootloader—without modifying NAND.
 > [!IMPORTANT]
 > Linux v6.1 now executes on the physical K3765-Z from a RAM-only direct
 > `Image` handoff. The MSM6290 timer/IRQ driver and bidirectional resident-USB
-> bridge are verified on physical hardware: Linux reaches freestanding PID 1
-> and provides the live `shadow-msm#` command shell without accessing NAND.
+> bridge are verified on physical hardware: Linux reaches a static BusyBox
+> 1.36.1 `ash` running as PID 1, accepts ordinary Linux commands, and supports
+> later host reattachment without accessing NAND.
 
 ## Why this exists
 
@@ -78,7 +79,7 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Reached PID 1 `kernel_init_freeable()` on the physical target
 - [x] Completed the generic initcalls and entered built-in ARM userspace
 - [x] Added and physically verified a reattachable RAM-only command shell
-- [ ] Physically verify the static BusyBox initramfs shell
+- [x] Physically verified the static BusyBox 1.36.1 initramfs shell
 - [ ] Replace the diagnostic trace path with a normal UART or USB console
 - [ ] Add microSD, NAND read-only, USB gadget, and display support
 
@@ -109,7 +110,9 @@ prints hardware and CP15 state, and currently returns cleanly to stage-0.
 | Address range | Purpose |
 |---|---|
 | `0x00100000..0x001FFFFF` | Conservatively unused low SDRAM |
-| `0x00200000..0x007FFFFF` | Linux RAM; `Image` starts at `0x00208000` |
+| `0x00200000..0x006BA857` | Linux `Image`, BSS, and static BusyBox initramfs runtime |
+| `0x006BA858..0x006FFFFF` | Verified free space below the image limit |
+| `0x00700000..0x007FFFFF` | Guard below the resident stage-0 monitor |
 | `0x00800000..0x00819DC7` | RAM-only stage-0 monitor |
 | `0x01000000` | BL1 load and entry |
 | `0x01F80000..0x01F8FFFF` | Reserved DTB window |
@@ -241,19 +244,18 @@ Actions, and rejects any image that would overlap the resident stage-0
 runtime.
 
 The physical target now reaches stable, interactive ARM userspace. Commit
-`6bc97cf` resolves PID 1's first instruction-page fault, enters the syscall
-path, opens `/dev/shadowtrace`, observes hardware timer IRQs, reports
-`Linux 6.1.0-shadow-msm-probe+ / armv5tejl`, and presents a reattachable
-`shadow-msm#` prompt.
+`4c5eff8`, built by GitHub Actions run
+[`31323294185`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/31323294185),
+boots a pinned, statically linked BusyBox 1.36.1 ARMv5 `ash` as PID 1. The
+hardware run reported `Linux 6.1.0-shadow-msm-probe+ / armv5tejl`, mounted
+`proc`, `sysfs`, and RAM-backed `tmpfs`, exposed 25,728 KiB of RAM, and
+successfully ran ordinary BusyBox commands as UID 0.
 
-The verified RAM-only probe uses a bidirectional bridge and a small built-in
-PID 1 command shell. The next build keeps that shell as a recovery fallback,
-then binds `/dev/shadowtrace` to standard input/output/error and starts a
-pinned, statically linked BusyBox 1.36.1 ARMv5 `ash`. Only `proc`, `sysfs`,
-and RAM-backed `tmpfs` are mounted. The monitor accepts host input only
-through Shadow-MSM command `0x1c/0x0e`; its complete live command table is
-locked to the bounded Shadow-MSM handler so the original storage handlers
-remain unreachable.
+The host later reattached to the same live kernel without rebooting it;
+`/proc/1/exe` still resolved to `/bin/busybox` after more than four minutes.
+The monitor accepts host input only through Shadow-MSM command `0x1c/0x0e`;
+its complete live command table is locked to the bounded Shadow-MSM handler
+so the original storage handlers remain unreachable.
 
 After loading the matching monitor and verified kernel bundle, start Linux
 with an interactive terminal by adding `--interactive` to the existing
@@ -272,6 +274,21 @@ An already-running interactive build can be reattached without restarting it:
 py -3.9 .\outputs\k3765_stage0_console.py COMxx attach `
   --log .\outputs\linux_attach.log
 ```
+
+## Offline Linux shell kit
+
+[`outputs/k3765_linux_shell.py`](outputs/k3765_linux_shell.py) integrates
+payload verification, the normal-to-downloader switch, bounded SDRAM loading,
+target-side CRC checks, Linux handoff, live boot logs, BusyBox shell I/O, and
+reattachment in one host program. The companion
+[`work/build_linux_shell_iso_kit.py`](work/build_linux_shell_iso_kit.py)
+assembles a read-only virtual-CD kit from locally supplied, hash-verified
+artifacts and dependencies.
+
+Vendor firmware, the ZTE driver package, and generated ISO files are not
+stored in this repository. Building or mounting the kit does not write the
+modem's NAND; replacing the stock virtual-CD file is a separate, explicitly
+persistent operation.
 
 This remains a bring-up kernel rather than a complete distribution. It still
 uses the resident OEM USB transport, and it has no native USB controller,

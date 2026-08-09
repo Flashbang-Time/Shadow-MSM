@@ -1,0 +1,6 @@
+Shadow-MSM target-side RAM CRC preflight
+Host time: 2026-08-09T21:26:52
+No NAND operation
+
+CRC32 bl1 at 0x01000000: 0xAF2CF379
+CRC32 dtb at 0x01F80000: 0x483C3017

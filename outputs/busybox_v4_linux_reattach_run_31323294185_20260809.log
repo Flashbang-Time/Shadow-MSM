@@ -1,0 +1,319 @@
+BUSYBOX_REATTACH_OK
+shadow-msm#
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0xBEA51704
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x0014CE38
+Shadow-MSM: data SP 0xBEA51728
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021EFBC
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x0008425C
+Shadow-MSM: data SP 0xBEA517E8
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x0018FDA0
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x0018FDA0
+Shadow-MSM: prefetch SP 0xBEA5171C
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0xBEA5171C
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x0018FDCC
+Shadow-MSM: data SP 0xBEA5171C
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x00139D80
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x00139D80
+Shadow-MSM: prefetch SP 0xBEA51728
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00219D68
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x00139D90
+Shadow-MSM: data SP 0xBEA51728
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00219D68
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00139D98
+Shadow-MSM: data SP 0xBEA51728
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x00010420
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x00010420
+Shadow-MSM: prefetch SP 0xBEA51728
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00215090
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x00139DA4
+Shadow-MSM: data SP 0xBEA51728
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00215650
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00139DB4
+Shadow-MSM: data SP 0xBEA51728
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00217190
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x00139DF4
+Shadow-MSM: data SP 0xBEA51728
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x002171A4
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00139EB4
+Shadow-MSM: data SP 0xBEA51728
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x0014CE38
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x0014CE38
+Shadow-MSM: prefetch SP 0xBEA51728
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0xBEA51704
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x0014CE38
+Shadow-MSM: data SP 0xBEA51728
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00216AD8
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x0014CE48
+Shadow-MSM: data SP 0xBEA516E8
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00214890
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x0013A07C
+Shadow-MSM: data SP 0xBEA51728
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x000841B0
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x000841B0
+Shadow-MSM: prefetch SP 0xBEA517E8
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x0007F3D0
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x0007F3D0
+Shadow-MSM: prefetch SP 0xBEA517B8
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021EFC1
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x00082B64
+Shadow-MSM: data SP 0xBEA517B8
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x00108414
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x00108414
+Shadow-MSM: prefetch SP 0xBEA51710
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x00129B50
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x00129B50
+Shadow-MSM: prefetch SP 0xBEA517B8
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x001F7B28
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x00129BA0
+Shadow-MSM: data SP 0xBEA517A4
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021EFC1
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x0007FB60
+Shadow-MSM: data SP 0xBEA517A0
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021C004
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x000824D0
+Shadow-MSM: data SP 0xBEA517B8
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x001EAED8
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x000145A0
+Shadow-MSM: data SP 0xBEA517D0
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00209558
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x00129C50
+Shadow-MSM: data SP 0xBEA517BC
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x001C5870
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x001C5870
+Shadow-MSM: prefetch SP 0xBEA517D8
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021F13C
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x0012565C
+Shadow-MSM: data SP 0xBEA516F8
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021F13C
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00125A40
+Shadow-MSM: data SP 0xBEA516F8
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00216264
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00015E14
+Shadow-MSM: data SP 0xBEA517E0
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x0015803C
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x0015803C
+Shadow-MSM: prefetch SP 0xBEA517D0
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x001D3448
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x001098A4
+Shadow-MSM: data SP 0xBEA51228
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x0011F0E8
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x0011F0E8
+Shadow-MSM: prefetch SP 0xBEA515E0
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x001A346C
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x001A346C
+Shadow-MSM: prefetch SP 0xBEA51660
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021CF70
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00010714
+Shadow-MSM: data SP 0xBEA51164
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021A124
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x00182860
+Shadow-MSM: data SP 0xBEA51188
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00212BC4
+Shadow-MSM: data FSR 0x00000017
+Shadow-MSM: data PC 0x0018298C
+Shadow-MSM: data SP 0xBEA51188
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x0017FC4C
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x0017FC4C
+Shadow-MSM: prefetch SP 0xBEA51188
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x00169EF4
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x00169EF4
+Shadow-MSM: prefetch SP 0xBEA51758
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x001970F4
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x001970F4
+Shadow-MSM: prefetch SP 0xBEA51758
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021A0C4
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00197178
+Shadow-MSM: data SP 0xBEA51748
+Shadow-MSM: user data abort resolved
+ 00:04:38 up 4 min,  0 users,  load average: 0.00, 0.00, 0.00
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00217348
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x0007E438
+Shadow-MSM: data SP 0xBEA517D8
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021F06C
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00124014
+Shadow-MSM: data SP 0xBEA517A0
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021CF5C
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x0008097C
+Shadow-MSM: data SP 0xBEA517C8
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00215974
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x0007E620
+Shadow-MSM: data SP 0xBEA51838
+Shadow-MSM: user data abort resolved
+shadow-msm#
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00219B30
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x0008BEA4
+Shadow-MSM: data SP 0xBEA51800
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x00216264
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00015CB0
+Shadow-MSM: data SP 0xBEA51628
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x0006E9B4
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x0006E9B4
+Shadow-MSM: prefetch SP 0xBEA51620
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0xBEA50FBC
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x00129A94
+Shadow-MSM: data SP 0xBEA50FC8
+Shadow-MSM: user data abort resolved
+Shadow-MSM: PID 1 user prefetch abort
+Shadow-MSM: prefetch address 0x000EF6F4
+Shadow-MSM: prefetch IFSR 0x00000005
+Shadow-MSM: prefetch PC 0x000EF6F4
+Shadow-MSM: prefetch SP 0xBEA51598
+Shadow-MSM: user prefetch abort resolved
+Shadow-MSM: PID 1 user data abort
+Shadow-MSM: data address 0x0021A160
+Shadow-MSM: data FSR 0x0000081F
+Shadow-MSM: data PC 0x000EF720
+Shadow-MSM: data SP 0xBEA51580
+Shadow-MSM: user data abort resolved
+              total        used        free      shared  buff/cache   available
+Mem:          25
+728        1824       21696        2088        2208       20820
+Swap:             0           0
+          0
+shadow-msm#
+/bin/busybox
+shadow-msm#
+Maximum runtime of 20 seconds reached; target left running.

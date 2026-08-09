@@ -23,8 +23,10 @@ Its visible milestones prove that:
 14. the permanent page tables preserve the resident monitor mapping; and
 15. `paging_init` returns to generic kernel startup.
 16. the recovered 32.768-kHz timer route drives Linux clock events;
-17. the built-in ELF `/init` crosses `execve()` and demand paging; and
-18. PID 1 enters syscalls and remains alive in userspace.
+17. the built-in ELF `/init` crosses `execve()` and demand paging;
+18. PID 1 enters syscalls and remains alive in userspace;
+19. static BusyBox 1.36.1 starts as PID 1 and provides an `ash` shell; and
+20. the host can detach and later reattach to the same running shell.
 
 The early trace patch borrows the initialized RAM-resident ARMPRG diagnostic
 string routine only while the MMU is off. The device tree reserves
@@ -167,11 +169,12 @@ Supported commands are `help`, `uname`, `hardware`, `status`, `about`,
 POSIX shell. The physical K3765-Z accepted all commands, returned live timer
 IRQ counts, and accepted a second host attachment without rebooting Linux.
 
-The next probe retains that command loop as a fallback, but first connects
-`/dev/shadowtrace` to standard input, output, and error and execs a statically
-linked ARMv5 BusyBox `ash`. Its initramfs contains ordinary applet links and
-mounts only `proc`, `sysfs`, and RAM-backed `tmpfs`. This BusyBox handoff is
-build-gated but remains unverified on physical hardware until its first run.
+The current probe retains that command loop as a fallback, connects
+`/dev/shadowtrace` to standard input, output, and error, and execs a statically
+linked ARMv5 BusyBox 1.36.1 `ash`. Its initramfs contains ordinary applet
+links and mounts only `proc`, `sysfs`, and RAM-backed `tmpfs`. This path is
+physically verified: BusyBox ran as PID 1 and UID 0, executed standard Linux
+commands, and remained available through a later host reattachment.
 
 The locally built stage-0 monitor locks all 28 OEM protocol command-table
 entries to the Shadow-MSM callback. That callback validates command `0x1c`
