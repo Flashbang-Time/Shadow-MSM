@@ -127,12 +127,12 @@ output. Use `--log-dir C:\some\folder` to choose another location.
 | `k3765_bl1_linux_image.bin` | `0x01000000` | Validating BL1 handoff |
 | `k3765-z-probe.dtb` | `0x01f80000` | Device tree |
 
-The Linux file ends at `0x0069b9b0`; its complete static runtime, including
-BSS, ends at `0x006ba858`. This leaves 1,333,160 bytes before the resident
+The Linux file ends at `0x00662614`; its complete static runtime, including
+BSS, ends at `0x00680d58`. This leaves 1,569,448 bytes before the resident
 monitor at `0x00800000`. `SHA256SUMS` covers every distributable file in this
 directory. The generated kit corresponds to the build-verified BusyBox
-payload set from GitHub Actions run `31323294185`. That exact payload set has
-booted on the physical K3765-Z: BusyBox ran as PID 1 and UID 0, ordinary
-commands completed, and a later host process reattached to the same live
-shell. The test did not access NAND or replace the modem's existing virtual-CD
-image.
+and `ttySHM0` payload set from GitHub Actions run `31330993698`. This exact
+TTY payload passed compile, hash, and RAM-boundary verification; its first
+physical boot is still pending. The preceding BusyBox `/dev/shadowtrace`
+payload was physically verified on the K3765-Z without accessing NAND or
+replacing the modem's existing virtual-CD image.

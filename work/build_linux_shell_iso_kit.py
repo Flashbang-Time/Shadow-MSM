@@ -20,16 +20,16 @@ EXPECTED = {
         "588e897f46a3d7dfe4f5f989bcc85ab3b4604b4f7ccacd5d802b53be226f4f52",
     ),
     "Image-k3765-probe": (
-        4_798_896,
-        "a2cb483e5b7b9c22675d594ab054e2457e7a156162839b25cd34df7a1e2579c6",
+        4_564_500,
+        "60a99e09134738428dd0f3693c5bd2fd72bd8926403d9afc6b0851dab38a974f",
     ),
     "k3765_bl1_linux_image.bin": (
         5_933,
-        "9f9a531a783682046b8a66f81e5a53c7be128cf2f720eac9c3cb5ae1f7c527cf",
+        "53bba2751e32ee044ced5522eb9676abdd38f76c2637841fd12274c2da2f64cc",
     ),
     "k3765-z-probe.dtb": (
-        891,
-        "58607b3d3b36cd2f89b9ffbad53a7758173811086249eb99954884db7ba78a35",
+        883,
+        "1025f0a145c4c830b2e7820caea92f2a28d07177665893d172a3c87ab7fdf76e",
     ),
 }
 
@@ -208,11 +208,11 @@ def main():
         "Shadow-MSM K3765-Z Linux shell ISO kit\n"
         f"Built: {datetime.now().isoformat(timespec='seconds')}\n"
         f"Source commit: {git_commit()}\n"
-        "Payload source: GitHub Actions run 31323294185\n"
+        "Payload source: GitHub Actions run 31330993698\n"
         "Artifact ZIP SHA-256: "
-        "4cb5d68fc566847d84cdbac615c0f2831067c053bdb93142784b8bd2f772eaf6\n"
-        "Linux runtime end: 0x006BA858\n"
-        "Runtime-to-monitor gap: 1333160 bytes\n"
+        "55d257e6462a8290199f5ff5c8f52f8ed81846c1420e104f16f359d54dfe8dcb\n"
+        "Linux runtime end: 0x00680D58\n"
+        "Runtime-to-monitor gap: 1569448 bytes\n"
         "Runtime persistence: volatile SDRAM only\n"
         "NAND/CEFS operations: not implemented\n",
         encoding="utf-8",

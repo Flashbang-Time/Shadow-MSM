@@ -1670,3 +1670,23 @@ technical reference. The monitor and host loader implement no NAND operation.
   bounded captures. No NAND erase, program, partition-table, CEFS, or other
   persistent-storage operation was sent. The on-device `/ZTEMODEM.ISO` was
   not replaced during this run.
+
+## 2026-08-09 - ttySHM0 build and offline-kit verification
+
+- Commit `411b48d` adds the fixed-major `ttySHM0` Linux TTY and console over
+  the already-bounded resident byte transport. `/dev/shadowtrace` remains the
+  PID 1 recovery fallback.
+- GitHub Actions run
+  [`31330993698`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/31330993698)
+  compiled Linux v6.1, the ARMv5 BusyBox initramfs, and the built-in TTY
+  driver successfully.
+- The verified direct `Image` is 4,564,500 bytes with SHA-256
+  `60a99e09134738428dd0f3693c5bd2fd72bd8926403d9afc6b0851dab38a974f`
+  and CRC32 `3ECE065C`. Its complete static runtime ends at `0x00680D58`,
+  leaving 1,569,448 bytes below the resident monitor at `0x00800000`.
+- The offline-kit dry run verified all 46 distributed files, then verified
+  the monitor, kernel, BL1, and DTB individually. Expected target-side
+  preflight CRC32 values are BL1 `D26A57AB` and DTB `C511699F`.
+- This entry records software/build verification only. The exact `ttySHM0`
+  artifact has not yet been booted on the physical K3765-Z. No target port
+  was opened and no storage operation was performed.

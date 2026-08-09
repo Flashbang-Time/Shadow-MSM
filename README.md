@@ -111,8 +111,8 @@ prints hardware and CP15 state, and currently returns cleanly to stage-0.
 | Address range | Purpose |
 |---|---|
 | `0x00100000..0x001FFFFF` | Conservatively unused low SDRAM |
-| `0x00200000..0x006BA857` | Linux `Image`, BSS, and static BusyBox initramfs runtime |
-| `0x006BA858..0x006FFFFF` | Verified free space below the image limit |
+| `0x00200000..0x00680D57` | Linux `Image`, BSS, and static BusyBox initramfs runtime |
+| `0x00680D58..0x006FFFFF` | Verified free space below the image limit |
 | `0x00700000..0x007FFFFF` | Guard below the resident stage-0 monitor |
 | `0x00800000..0x00819DC7` | RAM-only stage-0 monitor |
 | `0x01000000` | BL1 load and entry |
@@ -258,13 +258,15 @@ The monitor accepts host input only through Shadow-MSM command `0x1c/0x0e`;
 its complete live command table is locked to the bounded Shadow-MSM handler
 so the original storage handlers remain unreachable.
 
-The next build promotes that byte bridge to a proper Linux TTY named
-`ttySHM0`. Linux then owns canonical input, echo, signal characters, and
-`/dev/console`, while `/dev/shadowtrace` remains an emergency fallback. The
-host tools forward individual keys: `Ctrl+C` is delivered to the foreground
-Linux process and `Ctrl+]` detaches the host without rebooting the target.
-This TTY path is source-complete but remains hardware-unverified until its
-first CI artifact is booted.
+Commit `411b48d`, built successfully by GitHub Actions run
+[`31330993698`](https://github.com/Flashbang-Time/Shadow-MSM/actions/runs/31330993698),
+promotes that byte bridge to a proper Linux TTY named `ttySHM0`. Linux owns
+canonical input, echo, signal characters, and `/dev/console`, while
+`/dev/shadowtrace` remains an emergency fallback. The host tools forward
+individual keys: `Ctrl+C` is delivered to the foreground Linux process and
+`Ctrl+]` detaches the host without rebooting the target. This exact TTY
+artifact passed compile, hash, and RAM-boundary verification but remains
+hardware-unverified until its first physical boot.
 
 After loading the matching monitor and verified kernel bundle, start Linux
 with an interactive terminal by adding `--interactive` to the existing

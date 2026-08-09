@@ -49,7 +49,7 @@ ESC = 0x7D
 MONITOR_BASE = 0x00800000
 DIRECT_IMAGE_START = 0x00208000
 DIRECT_IMAGE_END = 0x00700000
-IMAGE_RUNTIME_END = 0x006BA858
+IMAGE_RUNTIME_END = 0x00680D58
 SAFE_RAM_START = 0x01000000
 SAFE_RAM_END = 0x02000000
 MAX_CHUNK = 0x3F9
@@ -84,20 +84,20 @@ PAYLOADS = {
     },
     "image": {
         "name": "Image-k3765-probe",
-        "size": 4_798_896,
-        "sha256": "a2cb483e5b7b9c22675d594ab054e2457e7a156162839b25cd34df7a1e2579c6",
+        "size": 4_564_500,
+        "sha256": "60a99e09134738428dd0f3693c5bd2fd72bd8926403d9afc6b0851dab38a974f",
     },
     "bl1": {
         "name": "k3765_bl1_linux_image.bin",
         "size": 5_933,
-        "sha256": "9f9a531a783682046b8a66f81e5a53c7be128cf2f720eac9c3cb5ae1f7c527cf",
-        "crc32": 0xAF2CF379,
+        "sha256": "53bba2751e32ee044ced5522eb9676abdd38f76c2637841fd12274c2da2f64cc",
+        "crc32": 0xD26A57AB,
     },
     "dtb": {
         "name": "k3765-z-probe.dtb",
-        "size": 891,
-        "sha256": "58607b3d3b36cd2f89b9ffbad53a7758173811086249eb99954884db7ba78a35",
-        "crc32": 0x483C3017,
+        "size": 883,
+        "sha256": "1025f0a145c4c830b2e7820caea92f2a28d07177665893d172a3c87ab7fdf76e",
+        "crc32": 0xC511699F,
     },
 }
 
