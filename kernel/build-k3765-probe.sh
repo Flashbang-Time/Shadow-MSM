@@ -95,7 +95,7 @@ make -C "${busybox_tree}" \
 	O="${busybox_out}" \
 	ARCH=arm \
 	CROSS_COMPILE=arm-linux-gnueabi- \
-	-j"$(nproc)"
+	-j1
 
 arm-linux-gnueabi-readelf -h "${busybox_binary}" |
 	grep -Eq 'Machine:[[:space:]]+ARM'
