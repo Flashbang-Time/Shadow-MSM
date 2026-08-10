@@ -87,7 +87,7 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 
 
 >[!IMPORTANT]
-?microSD driver has been written but is unstable; simple read/write operations work. As for NAND, that's a whole other mountain I need to move.
+>microSD driver has been written but is unstable; simple read/write operations work. As for NAND, that's a whole other mountain I need to move.
 >USB Gadget is hard because it's hard what can I say.
 >Display support is a tough one, I will try bit banging TCP/IP through serial when I get USB Gadget working or something. This will require swap as the in-built RAM is not enough for anything.
 
