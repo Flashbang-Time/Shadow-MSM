@@ -87,7 +87,7 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 
 
 > [!IMPORTANT]
-> microSD driver has been written but is unstable; simple read/write operations work. As for NAND, that's a whole other mountain I need to move.
+> microSD driver has been written but is unstable; simple read/write operations work, it can successfully detect a SanDisk Ultra Plus 64GB. As for NAND, that's a whole other mountain I need to move.
 > 
 > USB Gadget is hard because it's hard what can I say.
 > 
