@@ -7,6 +7,7 @@
 
 
 ![ZTE Vodafone K3765-Z](media/image4.png)
+
 **RAM-first bare-metal bring-up and Linux boot research for legacy Qualcomm
 MSM hardware.**
 
