@@ -6,7 +6,7 @@
 ![CPU: ARMv5TEJ](https://img.shields.io/badge/CPU-ARM926EJ--S-0091bd)
 
 
-![ZTE Vodafone K3765-Z](media)
+![ZTE Vodafone K3765-Z](media/image3.png)
 **RAM-first bare-metal bring-up and Linux boot research for legacy Qualcomm
 MSM hardware.**
 
