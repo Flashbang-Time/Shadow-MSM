@@ -8,6 +8,8 @@
 **RAM-first bare-metal bring-up and Linux boot research for legacy Qualcomm
 MSM hardware.**
 
+The modem has been killed because of me knocking the PMIC chip off the board while removing it's shield.
+
 Shadow-MSM currently targets the **ZTE/Vodafone K3765-Z**, built around the
 Qualcomm MSM6290. The project provides a reproducible path from the legacy
 Qualcomm primary downloader to custom ARM code, a diagnostic stage-0 monitor,
