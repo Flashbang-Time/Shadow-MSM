@@ -82,7 +82,7 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Physically verified the static BusyBox 1.36.1 initramfs shell
 - [x] Physically verify the `ttySHM0` Linux TTY/console bridge
 - [ ] Replace the diagnostic trace path with a normal UART or USB console
-[?] Add microSD, NAND read-only, USB gadget, and display support
+- [?] Add microSD, NAND read-only, USB gadget, and display support
 
 ## Boot architecture
 
