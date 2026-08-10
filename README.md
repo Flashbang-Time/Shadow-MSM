@@ -87,10 +87,9 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 
 
 >[!IMPORTANT]
->microSD driver has been written and is working for simple read/write operations, as for NAND that's a whole other mountain I need to move.
+?microSD driver has been written but is unstable; simple read/write operations work. As for NAND, that's a whole other mountain I need to move.
 >USB Gadget is hard because it's hard what can I say.
 >Display support is a tough one, I will try bit banging TCP/IP through serial when I get USB Gadget working or something. This will require swap as the in-built RAM is not enough for anything.
-
 
 ## Boot architecture
 
@@ -273,8 +272,7 @@ canonical input, echo, signal characters, and `/dev/console`, while
 `/dev/shadowtrace` remains an emergency fallback. The host tools forward
 individual keys: `Ctrl+C` is delivered to the foreground Linux process and
 `Ctrl+]` detaches the host without rebooting the target. This exact TTY
-artifact passed compile, hash, and RAM-boundary verification but remains
-hardware-unverified until its first physical boot.
+artifact passed compile, hash, and RAM-boundary verification, it has been hardware verified.
 
 After loading the matching monitor and verified kernel bundle, start Linux
 with an interactive terminal by adding `--interactive` to the existing
@@ -311,7 +309,7 @@ persistent operation.
 
 This remains a bring-up kernel rather than a complete distribution. It still
 uses the resident OEM USB transport, and it has no native USB controller,
-storage, cellular, or production console driver. Every current boot and shell
+(storage?), cellular, or production console driver. Every current boot and shell
 component is RAM-resident; power-cycling returns to the stock firmware.
 
 SHA-256 values for the redistributable generated artifacts are recorded in
