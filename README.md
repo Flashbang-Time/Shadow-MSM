@@ -5,6 +5,8 @@
 ![Target: MSM6290](https://img.shields.io/badge/target-Qualcomm%20MSM6290-3253dc)
 ![CPU: ARMv5TEJ](https://img.shields.io/badge/CPU-ARM926EJ--S-0091bd)
 
+
+![ZTE Vodafone K3765-Z](media/image.jpg)
 **RAM-first bare-metal bring-up and Linux boot research for legacy Qualcomm
 MSM hardware.**
 
