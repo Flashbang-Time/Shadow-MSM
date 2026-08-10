@@ -1,7 +1,7 @@
 # Shadow-MSM
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-![Status: Experimental](https://img.shields.io/badge/status-experimental-orange)
+![Status: Halted](https://img.shields.io/badge/status-halted-orange)
 ![Target: MSM6290](https://img.shields.io/badge/target-Qualcomm%20MSM6290-3253dc)
 ![CPU: ARMv5TEJ](https://img.shields.io/badge/CPU-ARM926EJ--S-0091bd)
 
