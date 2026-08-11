@@ -5,11 +5,11 @@
 ![Target: MSM6290](https://img.shields.io/badge/target-Qualcomm%20MSM6290-3253dc)
 ![CPU: ARMv5TEJ](https://img.shields.io/badge/CPU-ARM926EJ--S-0091bd)
 
+**RAM-first bare-metal bring-up and Linux boot research for legacy Qualcomm
+MSM hardware.**
 
 ![ZTE Vodafone K3765-Z](media/image4.png)
 
-**RAM-first bare-metal bring-up and Linux boot research for legacy Qualcomm
-MSM hardware.**
 
 The modem has been killed because of me knocking the PMIC chip off the board while removing it's shield.
 
