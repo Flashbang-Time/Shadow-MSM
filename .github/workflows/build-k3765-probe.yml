@@ -63,6 +63,19 @@ jobs:
             | sha256sum --check --strict
           tar -xjf busybox-1.36.1.tar.bz2
 
+      - name: Fetch and verify Debian ARMEL static Bash 5.2.37
+        run: |
+          curl --fail --location --retry 3 \
+            --output bash-static_5.2.37-2+b9_armel.deb \
+            https://deb.debian.org/debian/pool/main/b/bash/bash-static_5.2.37-2+b9_armel.deb
+          echo \
+            "68cd0cf4a64349f5b3965141e0f7864cee4eed642e93052d7153d92a94178b0c  bash-static_5.2.37-2+b9_armel.deb" \
+            | sha256sum --check --strict
+          dpkg-deb -x bash-static_5.2.37-2+b9_armel.deb bash-static-armel
+          echo \
+            "7aeb4245cbdb4b64a229a4290df267afd3df2c4ed375c260f18c2959ca45b306  bash-static-armel/usr/bin/bash-static" \
+            | sha256sum --check --strict
+
       - name: Build and verify the RAM-only probe
         env:
           SHADOW_MSM_PYTHON: ${{ github.workspace }}/.venv/bin/python
@@ -72,6 +85,7 @@ jobs:
             ./linux-v6.1 \
             ./busybox-1.36.1 \
             ./build/k3765-probe \
+            ./bash-static-armel/usr/bin/bash-static \
             > build-k3765-probe.log 2>&1
           build_status=$?
           set -e

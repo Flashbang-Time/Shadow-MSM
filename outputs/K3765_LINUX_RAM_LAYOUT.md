@@ -3,8 +3,9 @@
 | Address range | Purpose |
 |---|---|
 | `0x00100000..0x001FFFFF` | Conservatively unused low SDRAM |
-| `0x00200000..0x006FFFFF` | Direct Linux image/runtime window; `Image` starts at `0x00208000` |
-| `0x00700000..0x007FFFFF` | Guard below the resident monitor |
+| `0x00200000..0x0076DFE7` | Final verified Linux image, BSS, and built-in userspace runtime |
+| `0x0076DFE8..0x0077FFFF` | Verified space below the direct-image limit |
+| `0x00780000..0x007FFFFF` | 512 KiB guard below the resident monitor |
 | `0x00800000..0x00819DC7` | RAM-only stage-0/USB monitor |
 | `0x008FF800..0x008FF90B` | RAM-only host-input ring inside the reserved monitor window |
 | `0x01000000..0x0100162C` | BL1 0.2 dry-run image |
@@ -19,6 +20,7 @@ leaves the observed first MiB of SDRAM unused. BL1 still enters the compressed
 zImage at `0x01200000`; the decompressor places `Image` at `0x00208000`.
 
 The direct-image builder and artifact verifier require the complete static
-kernel runtime, including BSS through `_end`, to finish before `0x00700000`.
-This preserves a full 1 MiB guard below stage-0. The BL1 0.2 dry-run fixture
+kernel runtime, including BSS through `_end`, to finish before `0x00780000`.
+The final verified `_end` is `0x0076DFE8`, leaving 598,040 bytes before
+stage-0 and preserving a minimum 512 KiB guard. The BL1 0.2 dry-run fixture
 remains a historical header-parser test and is not an executable kernel.

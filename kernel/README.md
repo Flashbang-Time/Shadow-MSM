@@ -26,7 +26,9 @@ Its visible milestones prove that:
 17. the built-in ELF `/init` crosses `execve()` and demand paging;
 18. PID 1 enters syscalls and remains alive in userspace;
 19. static BusyBox 1.36.1 starts as PID 1 and provides an `ash` shell; and
-20. the host can detach and later reattach to the same running shell.
+20. the host can detach and later reattach to the same running shell;
+21. the polling SDCC0 host identifies and accesses a 64 GB SDXC card; and
+22. GNU Bash 5.2.37 and the exact upstream Neofetch 7.1.0 script run on target.
 
 The early trace patch borrows the initialized RAM-resident ARMPRG diagnostic
 string routine only while the MMU is off. The device tree reserves
@@ -42,15 +44,17 @@ lowest memory address up to a 2 MiB boundary for phys/virt patching. Making
 that alignment explicit gives a deterministic decompression target of
 `0x00208000` and leaves the first MiB untouched.
 
-The direct `Image` and its BSS must end below `0x00700000`. The verifier derives
+The direct `Image` and its BSS must end below `0x00780000`. The verifier derives
 the physical `_end` address from `System.map`, checks that the file/BSS
-boundary agrees with the raw `Image`, and preserves a full 1 MiB guard below
-the monitor at `0x00800000`.
+boundary agrees with the raw `Image`, and preserves a minimum 512 KiB guard
+below the monitor at `0x00800000`.
 
 ## Reproducible build
 
 The GitHub Actions workflow clones the official Linux `v6.1` tag, downloads
 the official BusyBox 1.36.1 source archive and verifies its pinned SHA-256,
+downloads the exact Debian ARMEL static Bash package and verifies both package
+and executable hashes,
 applies the ordered kernel patch series in `patches/`, merges
 `k3765_probe.config` over `multi_v5_defconfig`, builds both components with
 the Debian/Ubuntu `arm-linux-gnueabi-` toolchain, compiles the probe DTB, and
@@ -69,10 +73,20 @@ echo "b8cc24c9574d809e7279c3be349795c5d5ceb6fdf19ca709f80cde50e47de314  busybox-
   | sha256sum --check --strict
 tar -xjf busybox-1.36.1.tar.bz2
 
+curl --fail --location --retry 3 \
+  --output bash-static_5.2.37-2+b9_armel.deb \
+  https://deb.debian.org/debian/pool/main/b/bash/bash-static_5.2.37-2+b9_armel.deb
+echo "68cd0cf4a64349f5b3965141e0f7864cee4eed642e93052d7153d92a94178b0c  bash-static_5.2.37-2+b9_armel.deb" \
+  | sha256sum --check --strict
+dpkg-deb -x bash-static_5.2.37-2+b9_armel.deb bash-static-armel
+echo "7aeb4245cbdb4b64a229a4290df267afd3df2c4ed375c260f18c2959ca45b306  bash-static-armel/usr/bin/bash-static" \
+  | sha256sum --check --strict
+
 ./kernel/build-k3765-probe.sh \
   ./linux-v6.1 \
   ./busybox-1.36.1 \
-  ./build/k3765-probe
+  ./build/k3765-probe \
+  ./bash-static-armel/usr/bin/bash-static
 ```
 
 Generated files appear under:
@@ -87,6 +101,9 @@ build/k3765-probe/artifacts/
 ├── System.map-k3765-probe
 ├── busybox-armv5-static
 ├── busybox.config
+├── bash-static-armel
+├── neofetch-upstream
+├── NEOFETCH_LICENSE.md
 ├── early-boot.disasm.txt
 ├── vmlinux.symbols.txt
 ├── ARTIFACTS.txt
@@ -176,7 +193,7 @@ links and mounts only `proc`, `sysfs`, and RAM-backed `tmpfs`. This path is
 physically verified: BusyBox ran as PID 1 and UID 0, executed standard Linux
 commands, and remained available through a later host reattachment.
 
-The pending `ttySHM0` build adds a fixed-major Linux TTY and system console
+The physically verified `ttySHM0` build adds a fixed-major Linux TTY and system console
 over that same bounded resident byte transport. A delayed work item polls the
 256-byte input mailbox only from process context and feeds Linux's TTY flip
 buffer. The normal line discipline supplies canonical input, echo, control
@@ -196,5 +213,25 @@ entries to the Shadow-MSM callback. That callback validates command `0x1c`
 before handling any subcommand, making the original flash dispatch paths
 unreachable while Linux owns the transport.
 
-No flash driver, NAND command, partition operation, or persistent-storage
-write is part of this build path.
+No NAND driver, flash command, CEFS operation, or automatic persistent write
+is part of this build path. The removable-card driver issues SD writes only
+when userspace explicitly requests them.
+
+## Removable storage and upstream userspace
+
+The final physically tested image includes a conservative polling SDCC0 host
+for the K3765-Z microSD slot. It initializes cards at 400 kHz, switches the
+verified card to 4 MHz in 1-bit mode, and exposes a normal block device. The
+target detected a SanDisk Ultra Plus 64 GB card as `SK64G`, mounted its
+existing exFAT partition, read existing files, and completed a bounded
+write/sync/remount/checksum/delete test. The driver intentionally omits DMA,
+hot-plug, high-speed modes, write protection, and broad card compatibility.
+
+The initramfs also contains GNU Bash 5.2.37 from a hash-pinned Debian ARMEL
+package and the unmodified Neofetch 7.1.0 script from upstream commit
+`ccd5d9f52609bbdcd5d8fa78c4fdb0f12954125f`. Its Git blob ID and SHA-256 are
+recorded in `userspace/NEOFETCH_UPSTREAM.md`; the upstream license is retained
+in `userspace/NEOFETCH_LICENSE.md`.
+
+See `../outputs/FINAL_HARDWARE_VERIFICATION_20260810.md` for the exact
+artifacts and physical test record. No NAND or CEFS operation was performed.

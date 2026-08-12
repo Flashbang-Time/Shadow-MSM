@@ -11,7 +11,10 @@ MSM hardware.**
 ![ZTE Vodafone K3765-Z](media/image4.png)
 
 
-The modem has been killed because of me knocking the PMIC chip off the board while removing it's shield.
+> [!CAUTION]
+> Development is halted because the original test board was damaged when its
+> PMIC was accidentally knocked off during shield removal. The verified results
+> obtained before that failure are preserved below.
 
 Shadow-MSM currently targets the **ZTE/Vodafone K3765-Z**, built around the
 Qualcomm MSM6290. The project provides a reproducible path from the legacy
@@ -23,7 +26,9 @@ and a small second-stage bootloader—without modifying NAND.
 > `Image` handoff. The MSM6290 timer/IRQ driver and bidirectional resident-USB
 > bridge are verified on physical hardware: Linux reaches a static BusyBox
 > 1.36.1 `ash` running as PID 1, accepts ordinary Linux commands, and supports
-> later host reattachment without accessing NAND.
+> later host reattachment without accessing NAND. The final image also detects
+> a 64 GB SDXC card, mounts its exFAT filesystem, completes a reversible file
+> write/delete test, and runs GNU Bash 5.2.37 with upstream Neofetch 7.1.0.
 
 ## Why this exists
 
@@ -85,18 +90,29 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 - [x] Completed the generic initcalls and entered built-in ARM userspace
 - [x] Added and physically verified a reattachable RAM-only command shell
 - [x] Physically verified the static BusyBox 1.36.1 initramfs shell
-- [x] Physically verify the `ttySHM0` Linux TTY/console bridge
+- [x] Physically verified the `ttySHM0` Linux TTY/console bridge
+- [x] Added a polling SDCC0/microSD block driver for bring-up
+- [x] Detected a 64 GB SDXC card and mounted its existing exFAT filesystem
+- [x] Completed a write, sync, remount, checksum, delete, and read-only remount test
+- [x] Ran GNU Bash 5.2.37 and the exact upstream Neofetch 7.1.0 script on target
 - [ ] Replace the diagnostic trace path with a normal UART or USB console
-- [?] Add microSD, NAND read-only, USB gadget, and display support
+- [ ] Add NAND read-only, native USB gadget, and display support
 
 
 
 > [!IMPORTANT]
-> microSD driver has been written but is unstable; simple read/write operations work, it can successfully detect a SanDisk Ultra Plus 64GB. As for NAND, that's a whole other mountain I need to move.
+> The microSD path is physically verified as a bring-up driver. It detected a
+> SanDisk Ultra Plus 64 GB card, initialized it in 1-bit mode at 400 kHz before
+> switching to 4 MHz, read the existing exFAT filesystem, and completed a
+> reversible file write/delete test. It is deliberately polling-only and is
+> not a production SD/MMC implementation: hot-plug, DMA, high-speed modes,
+> write protection, and broad card compatibility remain unimplemented.
 > 
-> USB Gadget is hard because it's hard what can I say.
+> NAND remains untouched. Native USB gadget support and a display stack were
+> not completed before the original board was damaged.
 > 
-> Display support is a tough one, I will try bit banging TCP/IP through serial when I get USB Gadget working or something. This will require swap as the in-built RAM is not enough for anything.
+> See the [final hardware verification report](outputs/FINAL_HARDWARE_VERIFICATION_20260810.md)
+> for hashes, observed card geometry, and the exact reversible test boundary.
 
 ## Boot architecture
 
@@ -125,9 +141,9 @@ prints hardware and CP15 state, and currently returns cleanly to stage-0.
 | Address range | Purpose |
 |---|---|
 | `0x00100000..0x001FFFFF` | Conservatively unused low SDRAM |
-| `0x00200000..0x00680D57` | Linux `Image`, BSS, and static BusyBox initramfs runtime |
-| `0x00680D58..0x006FFFFF` | Verified free space below the image limit |
-| `0x00700000..0x007FFFFF` | Guard below the resident stage-0 monitor |
+| `0x00200000..0x0076DFE7` | Linux `Image`, BSS, and built-in userspace runtime |
+| `0x0076DFE8..0x0077FFFF` | Verified space below the direct-image limit |
+| `0x00780000..0x007FFFFF` | 512 KiB guard below the resident stage-0 monitor |
 | `0x00800000..0x00819DC7` | RAM-only stage-0 monitor |
 | `0x01000000` | BL1 load and entry |
 | `0x01F80000..0x01F8FFFF` | Reserved DTB window |
@@ -149,6 +165,10 @@ Shadow-MSM/
 ├── work/
 │   ├── firmware-analysis utilities
 │   └── stage-0 / BL1 image builders
+├── kernel/
+│   ├── Linux v6.1 patch series and reproducible build
+│   ├── MSM6290 timer, IRQ, TTY, and SDCC bring-up sources
+│   └── pinned upstream userspace sources and provenance
 └── outputs/
     ├── RAM-only host tools and generated images
     ├── disassembly and address maps
@@ -279,7 +299,15 @@ canonical input, echo, signal characters, and `/dev/console`, while
 `/dev/shadowtrace` remains an emergency fallback. The host tools forward
 individual keys: `Ctrl+C` is delivered to the foreground Linux process and
 `Ctrl+]` detaches the host without rebooting the target. This exact TTY
-artifact passed compile, hash, and RAM-boundary verification, it has been hardware verified.
+artifact passed compile, hash, RAM-boundary, and physical-hardware verification.
+
+The final physical build adds a polling SDCC0 host. It identified a SanDisk
+Ultra Plus 64 GB card as `SK64G` (59.5 GiB), exposed partition `p1`, mounted
+the existing exFAT filesystem, read existing files, and completed a bounded
+create/checksum/delete test. GNU Bash 5.2.37 and the unmodified upstream
+Neofetch 7.1.0 script then ran from the built-in initramfs. Exact hashes and
+the physical test record are in
+[`outputs/FINAL_HARDWARE_VERIFICATION_20260810.md`](outputs/FINAL_HARDWARE_VERIFICATION_20260810.md).
 
 After loading the matching monitor and verified kernel bundle, start Linux
 with an interactive terminal by adding `--interactive` to the existing
@@ -309,6 +337,11 @@ reattachment in one host program. The companion
 assembles a read-only virtual-CD kit from locally supplied, hash-verified
 artifacts and dependencies.
 
+The kernel build pins the exact Debian ARMEL static Bash package and embeds
+the upstream Neofetch source with its license and commit provenance. These are
+third-party components under their respective licenses; they are not
+reimplementations or look-alike output.
+
 Vendor firmware, the ZTE driver package, and generated ISO files are not
 stored in this repository. Building or mounting the kit does not write the
 modem's NAND; replacing the stock virtual-CD file is a separate, explicitly
@@ -316,7 +349,8 @@ persistent operation.
 
 This remains a bring-up kernel rather than a complete distribution. It still
 uses the resident OEM USB transport, and it has no native USB controller,
-(storage?), cellular, or production console driver. Every current boot and shell
+native USB, NAND, cellular, production SD/MMC, or production console driver.
+Every current boot and shell
 component is RAM-resident; power-cycling returns to the stock firmware.
 
 SHA-256 values for the redistributable generated artifacts are recorded in
@@ -343,6 +377,7 @@ Shadow-MSM is designed around volatile experimentation:
 
 - current loaders write only to the bounded SDRAM window;
 - current payloads do not contain NAND erase or program implementations;
+- removable-card writes occur only when explicitly requested from Linux userspace;
 - BL1 does not link or call the OEM NAND routines;
 - power-cycling removes the experimental code and restores the stock boot path;
 - target-side CRC verification is required before a second-stage call.

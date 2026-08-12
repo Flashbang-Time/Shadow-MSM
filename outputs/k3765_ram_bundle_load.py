@@ -20,8 +20,8 @@ MONITOR_BASE = 0x00800000
 SAFE_EXTRA_START = 0x01000000
 SAFE_RAM_END = 0x02000000
 DIRECT_IMAGE_START = 0x00208000
-# Preserve a full 1 MiB guard below the resident monitor at 0x00800000.
-DIRECT_IMAGE_END = 0x00700000
+# Preserve a minimum 512 KiB guard below the resident monitor at 0x00800000.
+DIRECT_IMAGE_END = 0x00780000
 MAX_CHUNK = 0x3F9
 
 
