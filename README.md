@@ -63,6 +63,21 @@ The stock AMSS image maps physical memory from `0x00100000` through
 approximately `0x01F5A000`. Shadow-MSM has also executed with a private stack
 at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 
+## Board photographs
+
+The [`media/`](media/) directory contains high-resolution photographs of the
+disassembled K3765-Z used for this work. They document both sides of the main
+PCB and both sides of the detachable SIM/microSD daughterboard. Click any
+image below for the original file.
+
+| Main PCB: RF/component side | Main PCB: MSM6290 and Hynix memory side |
+|---|---|
+| [![K3765-Z main PCB RF and component side](media/1000002598.jpg)](media/1000002598.jpg) | [![K3765-Z main PCB MSM6290 and Hynix side](media/1000002599.jpg)](media/1000002599.jpg) |
+
+| Daughterboard: microSD side | Daughterboard: SIM and power side |
+|---|---|
+| [![K3765-Z daughterboard microSD side](media/1000002600.jpg)](media/1000002600.jpg) | [![K3765-Z daughterboard SIM and power side](media/1000002601.jpg)](media/1000002601.jpg) |
+
 ## Current achievements
 
 - [x] Extracted and mapped the exact OEM firmware package
