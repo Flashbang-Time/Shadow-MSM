@@ -234,7 +234,10 @@ static void shadow_try_busybox(long descriptor, const char *device)
 			return;
 		}
 	}
-	/* All three mounts are volatile and optional. */
+	/* All four mounts are volatile and optional. */
+	shadow_syscall5(
+		SHADOW_SYS_MOUNT,
+		(long)"devtmpfs", (long)"/dev", (long)"devtmpfs", 0, 0);
 	shadow_syscall5(
 		SHADOW_SYS_MOUNT,
 		(long)"proc", (long)"/proc", (long)"proc", 0, 0);

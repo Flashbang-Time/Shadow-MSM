@@ -74,6 +74,14 @@ the target. `/dev/shadowtrace` remains a recovery fallback. When the local
 launcher exits, it deletes only its own staged session directory. Logs remain
 under `%LOCALAPPDATA%\Shadow-MSM\logs`.
 
+The image also contains the byte-identical upstream `dylanaraps/neofetch`
+7.1.0 script from commit `ccd5d9f52609bbdcd5d8fa78c4fdb0f12954125f`,
+its MIT license, and Debian's static ARMEL Bash runtime. Run it normally:
+
+```text
+neofetch
+```
+
 ## Reattach
 
 If Linux remains running in RAM, double-click `ATTACH_SHELL.cmd`, or run:
@@ -127,12 +135,12 @@ output. Use `--log-dir C:\some\folder` to choose another location.
 | `k3765_bl1_linux_image.bin` | `0x01000000` | Validating BL1 handoff |
 | `k3765-z-probe.dtb` | `0x01f80000` | Device tree |
 
-The Linux file ends at `0x00662614`; its complete static runtime, including
-BSS, ends at `0x00680d58`. This leaves 1,569,448 bytes before the resident
+The Linux file ends at `0x0074faac`; its complete static runtime, including
+BSS, ends at `0x0076dfe8`. This leaves 598,040 bytes before the resident
 monitor at `0x00800000`. `SHA256SUMS` covers every distributable file in this
-directory. The generated kit corresponds to the build-verified BusyBox
-and `ttySHM0` payload set from GitHub Actions run `31330993698`. This exact
-TTY payload passed compile, hash, and RAM-boundary verification; its first
-physical boot is still pending. The preceding BusyBox `/dev/shadowtrace`
-payload was physically verified on the K3765-Z without accessing NAND or
-replacing the modem's existing virtual-CD image.
+directory. The generated payload passed compile, hash, cpio-content, ABI, and
+RAM-boundary verification. This exact LF-preserved payload was physically
+verified on the K3765-Z on 2026-08-10: GNU Bash 5.2.37 reported its ARM EABI
+build, upstream `Neofetch 7.1.0` reported its version, and its complete ASCII
+and system-information display rendered over `ttySHM0`. NAND was not accessed
+and the modem's existing virtual-CD image was not replaced.

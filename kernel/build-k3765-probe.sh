@@ -3,8 +3,8 @@
 
 set -euo pipefail
 
-if [[ $# -lt 2 || $# -gt 3 ]]; then
-	echo "usage: $0 <linux-v6.1-tree> <busybox-1.36.1-tree> [output-directory]" >&2
+if [[ $# -lt 2 || $# -gt 4 ]]; then
+	echo "usage: $0 <linux-v6.1-tree> <busybox-1.36.1-tree> [output-directory] [bash-static-armel]" >&2
 	exit 2
 fi
 
@@ -30,23 +30,45 @@ dts_file="${repo_root}/kernel/dts/k3765-z-probe.dts"
 shadow_timer_driver="${repo_root}/kernel/drivers/timer-shadow-msm.c"
 shadow_tty_driver="${repo_root}/kernel/drivers/tty-shadow-msm.c"
 shadow_init_source="${repo_root}/kernel/userspace/shadow-init.c"
+shadow_neofetch_source="${repo_root}/kernel/userspace/neofetch"
+shadow_neofetch_license="${repo_root}/kernel/userspace/NEOFETCH_LICENSE.md"
+shadow_neofetch_sha256=2a272bbaa1275f21835fd3258fb8032ccdc98348e6ccb9cf58acacd366340170
 bl1_builder="${repo_root}/work/build_linux_image_bl1.py"
 shadow_init_binary="${output_root}/shadow-init"
 busybox_binary="${busybox_out}/busybox"
+bash_binary="${4:-${SHADOW_MSM_BASH_STATIC:-}}"
 busybox_build_log="${output_root}/busybox-build.log"
 initramfs_list="${output_root}/shadow-initramfs.list"
 initramfs_config="${output_root}/shadow-initramfs.config"
 os_release_file="${output_root}/shadow-msm-os-release"
 
-for patch_file in "${repo_root}"/kernel/patches/*.patch; do
-	if git -C "${kernel_tree}" apply --reverse --check \
-		"${patch_file}" 2>/dev/null; then
-		echo "$(basename "${patch_file}") is already applied"
-	else
-		git -C "${kernel_tree}" apply --check "${patch_file}"
-		git -C "${kernel_tree}" apply "${patch_file}"
-	fi
-done
+if [[ -z "${bash_binary}" || ! -f "${bash_binary}" ]]; then
+	echo "a static ARMEL Bash binary is required for upstream Neofetch" >&2
+	exit 2
+fi
+bash_binary="$(readlink -f "${bash_binary}")"
+arm-linux-gnueabi-readelf -h "${bash_binary}" |
+	grep -Eq 'Machine:[[:space:]]+ARM'
+arm-linux-gnueabi-readelf -h "${bash_binary}" |
+	grep -Eq 'Type:[[:space:]]+EXEC'
+if arm-linux-gnueabi-readelf -l "${bash_binary}" | grep -q INTERP; then
+	echo "Bash unexpectedly contains a dynamic interpreter" >&2
+	exit 1
+fi
+printf '%s  %s\n' "${shadow_neofetch_sha256}" "${shadow_neofetch_source}" |
+	sha256sum --check --status
+
+if [[ "${SHADOW_MSM_PATCHES_ALREADY_APPLIED:-0}" != 1 ]]; then
+	for patch_file in "${repo_root}"/kernel/patches/*.patch; do
+		if git -C "${kernel_tree}" apply --reverse --check \
+			"${patch_file}" 2>/dev/null; then
+			echo "$(basename "${patch_file}") is already applied"
+		else
+			git -C "${kernel_tree}" apply --check "${patch_file}"
+			git -C "${kernel_tree}" apply "${patch_file}"
+		fi
+	done
+fi
 
 # Stage the device-specific RAM-only clockevent/IRQ driver into Linux v6.1.
 install -m 0644 \
@@ -68,8 +90,19 @@ if ! grep -q 'tty-shadow-msm.o' "${kernel_tree}/drivers/tty/Makefile"; then
 		>> "${kernel_tree}/drivers/tty/Makefile"
 fi
 
+# Stage the polling SDCC host used during removable-card bring-up.
+install -m 0644 \
+	"${shadow_sdcc_probe}" \
+	"${kernel_tree}/drivers/clocksource/sdcc-shadow-msm.c"
+if ! grep -q 'sdcc-shadow-msm.o' \
+	"${kernel_tree}/drivers/clocksource/Makefile"; then
+	printf '\nobj-$(CONFIG_SHADOW_MSM_EARLY_TRACE) += sdcc-shadow-msm.o\n' \
+		>> "${kernel_tree}/drivers/clocksource/Makefile"
+fi
+
 # Build a pinned static ARMv5 BusyBox.  It runs entirely from the built-in
-# initramfs; no target storage driver or persistent filesystem is enabled.
+# initramfs while allowing an explicitly requested removable card to be
+# mounted from the interactive shell.
 make -C "${busybox_tree}" \
 	O="${busybox_out}" \
 	ARCH=arm \
@@ -134,6 +167,8 @@ if arm-linux-gnueabi-readelf -l "${busybox_binary}" |
 	exit 1
 fi
 
+# Leave one ELF-header page below .text, keeping every load segment at or
+# above the conventional ARM userspace floor of 0x00010000.
 arm-linux-gnueabi-gcc \
 	-march=armv5te \
 	-marm \
@@ -152,8 +187,9 @@ arm-linux-gnueabi-gcc \
 	-no-pie \
 	-Wl,--build-id=none \
 	-Wl,--gc-sections \
+	-Wl,-z,max-page-size=0x1000 \
 	-Wl,-e,_start \
-	-Wl,-Ttext=0x00010000 \
+	-Wl,-Ttext=0x00011000 \
 	-o "${shadow_init_binary}" \
 	"${shadow_init_source}"
 
@@ -164,6 +200,11 @@ arm-linux-gnueabi-readelf -h "${shadow_init_binary}" |
 if arm-linux-gnueabi-readelf -l "${shadow_init_binary}" |
 	grep -q 'INTERP'; then
 	echo "shadow-init unexpectedly contains a dynamic interpreter" >&2
+	exit 1
+fi
+if ! arm-linux-gnueabi-readelf -l "${shadow_init_binary}" |
+	grep -Eq 'LOAD[[:space:]]+0x[0-9a-f]+[[:space:]]+0x00010000'; then
+	echo "shadow-init first load segment is not safely above address zero" >&2
 	exit 1
 fi
 
@@ -180,6 +221,7 @@ printf '%s\n' \
 	'dir /dev 0755 0 0' \
 	'dir /etc 0755 0 0' \
 	'dir /mnt 0755 0 0' \
+	'dir /mnt/sd 0755 0 0' \
 	'dir /proc 0555 0 0' \
 	'dir /root 0700 0 0' \
 	'dir /run 0755 0 0' \
@@ -188,6 +230,9 @@ printf '%s\n' \
 	'dir /tmp 1777 0 0' \
 	'dir /usr 0755 0 0' \
 	'dir /usr/bin 0755 0 0' \
+	'dir /usr/share 0755 0 0' \
+	'dir /usr/share/doc 0755 0 0' \
+	'dir /usr/share/doc/neofetch 0755 0 0' \
 	'dir /usr/sbin 0755 0 0' \
 	'dir /var 0755 0 0' \
 	'nod /dev/console 0600 0 0 c 5 1' \
@@ -198,15 +243,23 @@ printf '%s\n' \
 	'nod /dev/shadowtrace 0600 0 0 c 240 0' \
 	"file /init ${shadow_init_binary} 0755 0 0" \
 	"file /bin/busybox ${busybox_binary} 0755 0 0" \
+	"file /bin/bash ${bash_binary} 0755 0 0" \
+	"file /usr/bin/neofetch ${shadow_neofetch_source} 0755 0 0" \
+	"file /usr/share/doc/neofetch/LICENSE.md ${shadow_neofetch_license} 0644 0 0" \
 	"file /etc/os-release ${os_release_file} 0644 0 0" \
 	> "${initramfs_list}"
 
+printf '%s\n' \
+	'slink /bin/neofetch ../usr/bin/neofetch 0777 0 0' \
+	'slink /usr/bin/env /bin/busybox 0777 0 0' \
+	>> "${initramfs_list}"
+
 for applet in \
-	'[' '[[' ash awk basename cat chmod clear cp cut date dd df dirname \
+	'[' '[[' ash awk basename blkid cat chmod clear cp cut date dd df dirname \
 	dmesg du echo env expr false free grep head hexdump hostname id kill \
 	ln ls md5sum mkdir mknod mount mv od pidof printf ps pwd readlink rm \
-	rmdir sed sh sha256sum sleep sort strings sync tail tar test touch tr \
-	true uname uniq uptime wc which whoami xargs; do
+	realpath rmdir sed seq sh sha256sum sleep sort stat strings stty sync \
+	tail tar test touch tr true tty uname uniq uptime wc which whoami xargs; do
 	printf 'slink /bin/%s busybox 0777 0 0\n' "${applet}" \
 		>> "${initramfs_list}"
 done
@@ -236,11 +289,26 @@ grep -q '^CONFIG_CPU_ARM926T=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_SHADOW_MSM_EARLY_TRACE=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_AUTO_ZRELADDR=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_BLK_DEV_INITRD=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_RD_XZ=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_INITRAMFS_COMPRESSION_XZ=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_BINFMT_ELF=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_PROC_FS=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_SYSFS=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_TMPFS=y$' "${kernel_out}/.config"
 grep -q '^CONFIG_TTY=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_BLOCK=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_MMC=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_MMC_BLOCK=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_EXFAT_FS=y$' "${kernel_out}/.config"
+grep -q '^CONFIG_VFAT_FS=y$' "${kernel_out}/.config"
+if grep -q '^CONFIG_CMA=y$' "${kernel_out}/.config"; then
+	echo "CMA unexpectedly enabled" >&2
+	exit 1
+fi
+if grep -q '^CONFIG_DMA_CMA=y$' "${kernel_out}/.config"; then
+	echo "DMA CMA unexpectedly enabled" >&2
+	exit 1
+fi
 grep -Fqx \
 	"CONFIG_INITRAMFS_SOURCE=\"${initramfs_list}\"" \
 	"${kernel_out}/.config"
@@ -261,6 +329,9 @@ cp "${kernel_out}/System.map" "${artifacts}/System.map-k3765-probe"
 cp "${shadow_init_binary}" "${artifacts}/shadow-init"
 cp "${busybox_binary}" "${artifacts}/busybox-armv5-static"
 cp "${busybox_out}/.config" "${artifacts}/busybox.config"
+cp "${bash_binary}" "${artifacts}/bash-static-armel"
+cp "${shadow_neofetch_source}" "${artifacts}/neofetch-upstream"
+cp "${shadow_neofetch_license}" "${artifacts}/NEOFETCH_LICENSE.md"
 
 # BL1 contains exact sparse fingerprints of the Image. Rebuild it for every
 # kernel artifact so a stale bootloader cannot reject or misidentify a new
@@ -304,8 +375,13 @@ python3 "${repo_root}/kernel/verify_probe.py" \
 	echo "PID 1 handoff: static BusyBox sh -i with TTY and recovery-shell fallback"
 	echo "BusyBox size: $(stat -c '%s' "${busybox_binary}")"
 	echo "BusyBox SHA256: $(sha256sum "${busybox_binary}" | cut -d' ' -f1)"
+	echo "Bash size: $(stat -c '%s' "${bash_binary}")"
+	echo "Bash SHA256: $(sha256sum "${bash_binary}" | cut -d' ' -f1)"
+	echo "Neofetch upstream commit: ccd5d9f52609bbdcd5d8fa78c4fdb0f12954125f"
+	echo "Neofetch SHA256: ${shadow_neofetch_sha256}"
 	echo "Mounted filesystems: proc, sysfs, tmpfs (all volatile/pseudo)"
-	echo "Persistent storage access: none"
+	echo "Removable storage: polling PL180 SDCC0 host, one block per request"
+	echo "NAND access: not configured"
 } >> "${artifacts}/ARTIFACTS.txt"
 
 find "${artifacts}" \

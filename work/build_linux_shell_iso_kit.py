@@ -20,16 +20,28 @@ EXPECTED = {
         "588e897f46a3d7dfe4f5f989bcc85ab3b4604b4f7ccacd5d802b53be226f4f52",
     ),
     "Image-k3765-probe": (
-        4_564_500,
-        "baf6f21f8d3bd295de92a7fe49bac90573e4854fd6d47cefdd369948788251ff",
+        5_536_428,
+        "c4fe5d5073e565e1083adc21074719d5a1db02ce04fb979e5c46610ced3915e0",
     ),
     "k3765_bl1_linux_image.bin": (
         5_933,
-        "53bba2751e32ee044ced5522eb9676abdd38f76c2637841fd12274c2da2f64cc",
+        "bfd98420d2ed21609e6c3502bf4f6fe584cbb0d33e75467796b117986cf9a6de",
     ),
     "k3765-z-probe.dtb": (
         883,
         "1025f0a145c4c830b2e7820caea92f2a28d07177665893d172a3c87ab7fdf76e",
+    ),
+    "bash-static-armel": (
+        2_054_784,
+        "7aeb4245cbdb4b64a229a4290df267afd3df2c4ed375c260f18c2959ca45b306",
+    ),
+    "neofetch-upstream": (
+        376_936,
+        "2a272bbaa1275f21835fd3258fb8032ccdc98348e6ccb9cf58acacd366340170",
+    ),
+    "NEOFETCH_LICENSE.md": (
+        1_083,
+        "2d46a645d01f0b0f951fca6812717bdc929aea210a204cd4928f360f65d714c0",
     ),
 }
 
@@ -89,8 +101,15 @@ def find_serial_package():
 def git_commit():
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
-            cwd=REPO_ROOT,
+            [
+                "git",
+                "-c",
+                f"safe.directory={REPO_ROOT.as_posix()}",
+                "-C",
+                str(REPO_ROOT),
+                "rev-parse",
+                "HEAD",
+            ],
             text=True,
             stderr=subprocess.DEVNULL,
         ).strip()
@@ -141,6 +160,12 @@ def main():
         ),
         "k3765-z-probe.dtb": artifact_dir / "k3765-z-probe.dtb",
         "ARTIFACTS.txt": artifact_dir / "ARTIFACTS.txt",
+        "bash-static-armel": artifact_dir / "bash-static-armel",
+        "neofetch-upstream": artifact_dir / "neofetch-upstream",
+        "NEOFETCH_LICENSE.md": artifact_dir / "NEOFETCH_LICENSE.md",
+        "NEOFETCH_UPSTREAM.md": (
+            REPO_ROOT / "kernel" / "userspace" / "NEOFETCH_UPSTREAM.md"
+        ),
     }
     for destination_name, source in files.items():
         expected = EXPECTED.get(destination_name)
@@ -208,11 +233,14 @@ def main():
         "Shadow-MSM K3765-Z Linux shell ISO kit\n"
         f"Built: {datetime.now().isoformat(timespec='seconds')}\n"
         f"Source commit: {git_commit()}\n"
-        "Payload source: GitHub Actions run 31332169413\n"
-        "Artifact ZIP SHA-256: "
-        "0334e8731a17f7988776459c174e1b334a68100f8da8b6c87ed6efd80e5f451e\n"
-        "Linux runtime end: 0x00680D58\n"
-        "Runtime-to-monitor gap: 1569448 bytes\n"
+        "Payload source: verified local Debian cross-build\n"
+        "Neofetch source: dylanaraps/neofetch commit "
+        "ccd5d9f52609bbdcd5d8fa78c4fdb0f12954125f\n"
+        "Neofetch version: 7.1.0 (unmodified upstream script)\n"
+        "Bash runtime: Debian bash-static ARMEL, ARMv5TE soft-float\n"
+        "Hardware verification: PASS on K3765-Z, 2026-08-10\n"
+        "Linux runtime end: 0x0076DFE8\n"
+        "Runtime-to-monitor gap: 598040 bytes\n"
         "Runtime persistence: volatile SDRAM only\n"
         "NAND/CEFS operations: not implemented\n",
         encoding="utf-8",

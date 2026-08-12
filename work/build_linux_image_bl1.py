@@ -15,10 +15,10 @@ from keystone import Ks, KS_ARCH_ARM, KS_MODE_ARM, KS_MODE_LITTLE_ENDIAN
 BL1_BASE = 0x01000000
 BL1_STACK_TOP = 0x01FFF000
 IMAGE_ADDR = 0x00208000
-# Keep a full 1 MiB guard below the resident monitor at 0x00800000.  The
+# Keep a 512 KiB guard below the resident monitor at 0x00800000.  The
 # kernel verifier separately checks the runtime _end symbol, including BSS,
 # against the same boundary.
-IMAGE_LIMIT = 0x00700000
+IMAGE_LIMIT = 0x00780000
 DTB_ADDR = 0x01F80000
 DTB_MAX = 0x00010000
 PRINT_STRING = 0x00816CF4
