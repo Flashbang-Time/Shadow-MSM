@@ -20,11 +20,11 @@ SHA-256: 3e8339725a77d416de292ac1506cd5d4b4fedc8937bda00a4ddf0437500c6b83
 
 This programmer and the generated Shadow-MSM images have been physically
 verified only on the P673A1 K3765-Z fitted with a Hynix `H8ACS0PL0MCR` MCP.
-An FCC P673A2 sample appears to use a Toshiba `TY8000A`-family MCP, potentially
-with a different RAM size and NAND implementation. Treat that hardware as a
-separate, unverified target: identify its memory non-destructively before
-reusing any address limit, NAND geometry, ECC, or bad-block assumption from
-the Hynix unit.
+An FCC-tested P673A1/B02 sample instead uses a Toshiba `TY8000A`-family MCP,
+potentially with a different RAM size and NAND implementation. Treat each
+memory configuration as a separate, unverified target: identify its memory
+non-destructively before reusing any address limit, NAND geometry, ECC, or
+bad-block assumption from the Hynix unit.
 
 In the verified Vodafone updater, this file is the PE resource mapped by the
 updater as:

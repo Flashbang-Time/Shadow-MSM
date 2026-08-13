@@ -68,8 +68,13 @@ at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
 K3765-Z units were not all assembled with the same memory MCP. An internal
 photograph from the FCC filing for the K3765-Z shows a Toshiba package marked
 `TY8000A`, rather than the Hynix `H8ACS0PL0MCR` fitted to the physical P673A1
-unit used throughout this project. The FCC exhibit metadata also references
-`P673A2`, suggesting that this may be an alternate or later board revision.
+unit used throughout this project. The FCC SAR report identifies its tested
+sample as hardware `P673A1-2.0.0` with firmware
+`BD_VDFP673A1V1.0.0B02`. The Toshiba device is therefore evidence of multiple
+memory configurations within the P673A1 hardware family, not evidence of a
+P673A2 revision. The two FCC applications cover the Part 15B peripheral and
+licensed cellular transmitter portions of the same composite device; their
+separate grant rows do not represent separate board variants.
 
 The closest catalogued full Toshiba part number is
 [`TY8000A800AFGP10`](https://www.xeltek.com/devices-supported/toshiba-device-programmers/),
@@ -83,7 +88,7 @@ physical Toshiba unit is identified at runtime.
 | Variant | Memory MCP | RAM | NAND | Status |
 |---|---|---:|---:|---|
 | P673A1 test unit | Hynix `H8ACS0PL0MCR` | 32 MiB | 128 MiB + 4 MiB OOB | Hardware verified |
-| FCC P673A2 sample | Toshiba `TY8000A` family | Possibly 64 MiB | Possibly 128 MiB | Photograph/catalog inference only |
+| FCC P673A1 sample (`B02`) | Toshiba `TY8000A` family | Possibly 64 MiB | Possibly 128 MiB | Hardware family confirmed; capacities inferred |
 
 Do not apply the Hynix NAND ID, ECC, spare-area, bad-block, or SDRAM assumptions
 to a Toshiba unit. Shadow-MSM's RAM-only entry mechanism may transfer, but a
@@ -91,6 +96,7 @@ new unit must first pass non-destructive memory-boundary and hardware-ID probes.
 The Toshiba configuration has not yet been tested by this project.
 
 Sources: [K3765-Z FCC filing](https://fccid.io/Q78-K3765-Z),
+[FCC SAR report identifying P673A1/B02](https://fcc.report/FCC-ID/Q78-K3765-Z/1112973.pdf),
 [Toshiba programmer-device listing](https://www.xeltek.com/devices-supported/toshiba-device-programmers/),
 and a [contemporary Qualcomm-platform FBGA137 BOM](https://fcc.report/FCC-ID/QISU1307/992556.pdf).
 
