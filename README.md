@@ -44,7 +44,7 @@ Shadow-MSM takes a deliberately conservative approach:
 - log every command, address, result, and observed reset;
 - establish observable hardware checkpoints before attempting a kernel handoff.
 
-## Verified target
+## Verified target (P673A1/Hynix unit)
 
 | Component | Identification |
 |---|---|
@@ -62,6 +62,37 @@ Shadow-MSM takes a deliberately conservative approach:
 The stock AMSS image maps physical memory from `0x00100000` through
 approximately `0x01F5A000`. Shadow-MSM has also executed with a private stack
 at `0x01FFF000`, confirming usable RAM near the top of the 32 MiB window.
+
+## Known hardware variants
+
+K3765-Z units were not all assembled with the same memory MCP. An internal
+photograph from the FCC filing for the K3765-Z shows a Toshiba package marked
+`TY8000A`, rather than the Hynix `H8ACS0PL0MCR` fitted to the physical P673A1
+unit used throughout this project. The FCC exhibit metadata also references
+`P673A2`, suggesting that this may be an alternate or later board revision.
+
+The closest catalogued full Toshiba part number is
+[`TY8000A800AFGP10`](https://www.xeltek.com/devices-supported/toshiba-device-programmers/),
+an FBGA137 device. Contemporary Qualcomm-platform documentation describes an
+FBGA137 memory MCP with 1 Gbit NAND and 512 Mbit mobile SDRAM, making
+**128 MiB NAND + 64 MiB RAM a plausible configuration** for the Toshiba
+variant. The low-resolution package photograph does not expose the complete
+ordering suffix, however, so those capacities remain unverified until a
+physical Toshiba unit is identified at runtime.
+
+| Variant | Memory MCP | RAM | NAND | Status |
+|---|---|---:|---:|---|
+| P673A1 test unit | Hynix `H8ACS0PL0MCR` | 32 MiB | 128 MiB + 4 MiB OOB | Hardware verified |
+| FCC P673A2 sample | Toshiba `TY8000A` family | Possibly 64 MiB | Possibly 128 MiB | Photograph/catalog inference only |
+
+Do not apply the Hynix NAND ID, ECC, spare-area, bad-block, or SDRAM assumptions
+to a Toshiba unit. Shadow-MSM's RAM-only entry mechanism may transfer, but a
+new unit must first pass non-destructive memory-boundary and hardware-ID probes.
+The Toshiba configuration has not yet been tested by this project.
+
+Sources: [K3765-Z FCC filing](https://fccid.io/Q78-K3765-Z),
+[Toshiba programmer-device listing](https://www.xeltek.com/devices-supported/toshiba-device-programmers/),
+and a [contemporary Qualcomm-platform FBGA137 BOM](https://fcc.report/FCC-ID/QISU1307/992556.pdf).
 
 ## Board photographs
 
