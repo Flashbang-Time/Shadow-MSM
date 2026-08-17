@@ -408,6 +408,14 @@ component is RAM-resident; power-cycling returns to the stock firmware.
 SHA-256 values for the redistributable generated artifacts are recorded in
 [`CHECKSUMS.sha256`](CHECKSUMS.sha256).
 
+## Experimental graphics reconnaissance
+
+The experimental branch includes static MSM6290 display/graphics analysis and
+a RAM-only translation-table probe. It confirms the presence of Qualcomm's
+MDP/MDDI display stack, but it is **not yet a working 3D driver**. Candidate
+hardware apertures remain unverified until replacement hardware is available.
+See [`outputs/GRAPHICS_RECON_README.md`](outputs/GRAPHICS_RECON_README.md).
+
 ## RGB diagnostic LED
 
 The K3765-Z multicolor LED is useful as an early bring-up console:

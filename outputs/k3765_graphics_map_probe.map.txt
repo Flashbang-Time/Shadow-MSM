@@ -1,0 +1,17 @@
+base=0x01000000
+entry=0x01000000
+stack_top=0x01FFF000
+print_string=0x00816CF4
+return_magic=0x474D5031
+access=cp15-and-page-table-ram-read-only
+mmio_access=none
+nand_access=none
+code_size=360
+image_size=5933
+sha256=3af3b8f3199eb21d03824e7af30b0214430e4a50ac71e2706216f8d040fce60b
+crc32=D9C46041
+candidate=xref_8000,virtual=0xFAD00000,stock_table_physical=0x80000000
+candidate=lead_a000,virtual=0xFB400000,stock_table_physical=0xA0000000
+candidate=lead_a800a,virtual=0xFB500000,stock_table_physical=0xA8000000
+candidate=lead_a800b,virtual=0xFB600000,stock_table_physical=0xA8000000
+candidate=lead_b800,virtual=0xFB700000,stock_table_physical=0xB8000000

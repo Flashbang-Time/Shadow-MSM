@@ -1,0 +1,132 @@
+MSM6290 static graphics reconnaissance
+image=amss.mbn
+size=16073974
+execution=none (static analysis only)
+
+[graphics/display strings]
+file=0x0023E368 addr=0x003D9368 MDDI_HOST
+file=0x005CB424 addr=0x00764424 /dev/mdp
+file=0x00655A28 addr=0x007EEA28 finished - mdp_disp_update_proc(%d) - %d msec elapsed
+file=0x00655A80 addr=0x007EEA80 calling  - mdp_disp_update_proc(%d)
+file=0x0066719C addr=0x0080019C MDP proxy cb called!
+file=0x006671B1 addr=0x008001B1 mdp_api_proc.c
+file=0x006671D4 addr=0x008001D4 ERROR: mdp_send_disp_API_packet within DISP TASK !!!
+file=0x00667280 addr=0x00800280 mdp_send_disp_API_packet returning NULL !!!
+file=0x006672C0 addr=0x008002C0 MDP_DISP_UPDATE START:
+file=0x0066731C addr=0x0080031C MDP_DISP_UPDATE END ----
+file=0x006673F8 addr=0x008003F8 mdp_disp_packet_proc - IPL Start
+file=0x0066747C addr=0x0080047C IPL FAILURE from mdp_disp_packet_proc()!!!
+file=0x006674BC addr=0x008004BC ERROR: mdp_disp_update() rex_wait() timeout!!!
+file=0x0066765C addr=0x0080065C ERROR: Cwin to small to be supported by MDP!
+file=0x00667774 addr=0x00800774 mdp_imglist_append error !!! -> two same node (0x%x)
+file=0x006677C0 addr=0x008007C0 MDP driver is not initialized
+file=0x00795F18 addr=0x0092EF18 !!! MDDI Primary Underflow !!!
+file=0x00795F58 addr=0x0092EF58 !!! MDDI Secondary Underflow !!!
+file=0x00795F90 addr=0x0092EF90 !!! MDDI Reverse Overflow !!!
+file=0x00795FC4 addr=0x0092EFC4 !!! MDDI Reverse CRC Error !!!
+file=0x00795FF8 addr=0x0092EFF8 !!! MDDI Primary Overwrite !!!
+file=0x0079602C addr=0x0092F02C !!! MDDI Secondary Overwrite !!!
+file=0x00796064 addr=0x0092F064 !!! MDDI RTD Failure !!!
+file=0x00796094 addr=0x0092F094 !!! MDDI DMA Abort !!!
+file=0x007960C0 addr=0x0092F0C0 MDDI Statistics since last report:
+file=0x0079642C addr=0x0092F42C No memory for mddi stats logging
+file=0x00796518 addr=0x0092F518 !!! MDDI %d Reverse CRC Error(s) !!!
+file=0x007965F4 addr=0x0092F5F4 MDDI unknown rev pkt
+file=0x00796668 addr=0x0092F668 MDDI_INT_IN condition
+file=0x00796694 addr=0x0092F694 MDDI Host: Activating Link %d Mbps
+file=0x007966CC addr=0x0092F6CC MDDI Host: Disabling Link
+file=0x007966FC addr=0x0092F6FC task waiting on mddi llist item
+file=0x0079676C addr=0x0092F76C MDDI queueing invalid linked list
+file=0x007967A4 addr=0x0092F7A4 MDDI host powered down!
+file=0x008E3D9F addr=0x00A7CD9F mddi_mc4_toshiba.c
+file=0x008E3EEC addr=0x00A7CEEC   MDP Line Counter=%d!
+file=0x008E3F44 addr=0x00A7CF44 MDDI: Previous Vsync handler never called
+file=0x008E3F84 addr=0x00A7CF84 MDDI: Previous Vsync handler never called
+file=0x008E3FAE addr=0x00A7CFAE mddi_sharp2.c
+file=0x008E3FD8 addr=0x00A7CFD8 MDP Start Script Event
+file=0x008E3FEF addr=0x00A7CFEF mdp_drv.c
+file=0x008E4010 addr=0x00A7D010 MDP MISR CRC = 0x%08x
+file=0x008E403C addr=0x00A7D03C MDP Completion Error = %d, MDP State = 0x%x
+file=0x008E4080 addr=0x00A7D080 ERROR!!! MDP Freeze() from mdp_wait_script_done() ****
+file=0x008E40CC addr=0x00A7D0CC MDP HW Update Time = %d msec
+file=0x008E4100 addr=0x00A7D100 WARNING - MDP operating in polling mode
+file=0x008E413C addr=0x00A7D13C Forced failure in MDP_MDDI_SUB_CAL()
+file=0x008E4298 addr=0x00A7D298 Event: mdp_disp_update_proc() starting
+file=0x008E42D4 addr=0x00A7D2D4 mdp_disp_update() Opcode = 0x%x Layer = 0x%x Addr = 0x%x
+file=0x008E4324 addr=0x00A7D324 **** failed in mdp_cal_ovimg_rec() from mdp_disp_update() ****
+file=0x008E4378 addr=0x00A7D378 Overlay registered not supported by this MDP version.
+file=0x008E43C4 addr=0x00A7D3C4 ERROR: mdp_drv_init(): Failed allocating buffer memory!
+file=0x008E4410 addr=0x00A7D410 mdp_ioctl() Opcode = 0x%x Layer = 0x%x Addr = 0x%x
+file=0x008E4470 addr=0x00A7D470 **** failed in mdp_cal_ovimg_rec() from mdp_ioctl() ****
+file=0x00A3E9E4 addr=0x00BD79E4 MDDI_HOST
+file=0x00A3EDA0 addr=0x00BD7DA0 MDDI host powered down!
+file=0x00A737B8 addr=0x00C0C7B8 mddi_corona.c
+file=0x00A73808 addr=0x00C0C808   MDP Line Counter=%d!
+file=0x00A73860 addr=0x00C0C860 MDDI: Previous Vsync handler never called
+file=0x00A738CD addr=0x00C0C8CD mddi_sharp.c
+file=0x00A73950 addr=0x00C0C950   MDP Line Counter=%d!
+file=0x00A739A8 addr=0x00C0C9A8 MDDI: Previous Vsync handler never called
+file=0x00B1CBFC addr=0x00CB5BFC ERROR: mdp_drv_init(): Failed allocating buffer memory!
+file=0x00B1CC34 addr=0x00CB5C34 mdp_drv.c
+file=0x00DB5724 addr=0x00F4E724 Input Output image format combination not supported                   by API mddi_queue_image
+file=0x00DB57AC addr=0x00F4E7AC MDDI powered down!
+
+[1-MiB mapping table at file offset 0x0002163C]
+virtual=0xF9000000 physical=0x20000000
+virtual=0xF9100000 physical=0x20100000
+virtual=0xF9200000 physical=0x28000000
+virtual=0xF9300000 physical=0x28100000
+virtual=0xF9400000 physical=0x30000000
+virtual=0xF9500000 physical=0x30100000
+virtual=0xF9600000 physical=0x38000000
+virtual=0xF9700000 physical=0x38100000
+virtual=0xF9800000 physical=0x40000000
+virtual=0xF9900000 physical=0x40100000
+virtual=0xF9A00000 physical=0x48000000
+virtual=0xF9B00000 physical=0x50000000
+virtual=0xF9C00000 physical=0x60000000
+virtual=0xF9D00000 physical=0x68000000
+virtual=0xF9E00000 physical=0x70000000
+virtual=0xF9F00000 physical=0x70100000
+virtual=0xFA000000 physical=0x70200000
+virtual=0xFA100000 physical=0x70300000
+virtual=0xFA200000 physical=0x70400000
+virtual=0xFA300000 physical=0x70500000
+virtual=0xFA400000 physical=0x70600000
+virtual=0xFA500000 physical=0x70700000
+virtual=0xFA600000 physical=0x70800000
+virtual=0xFA700000 physical=0x70900000
+virtual=0xFA800000 physical=0x70A00000
+virtual=0xFA900000 physical=0x70B00000
+virtual=0xFAA00000 physical=0x70C00000
+virtual=0xFAB00000 physical=0x78000000
+virtual=0xFAC00000 physical=0x84000000
+virtual=0xFAD00000 physical=0x80000000
+virtual=0xFAE00000 physical=0x80000000
+virtual=0xFAF00000 physical=0x80000000
+virtual=0xFB000000 physical=0x80000000
+virtual=0xFB100000 physical=0x80000000
+virtual=0xFB200000 physical=0x88000000
+virtual=0xFB300000 physical=0x98000000
+virtual=0xFB400000 physical=0xA0000000
+virtual=0xFB500000 physical=0xA8000000
+virtual=0xFB600000 physical=0xA8000000
+virtual=0xFB700000 physical=0xB8000000
+virtual=0xFB800000 physical=0x90000000
+virtual=0xFB900000 physical=0x90100000
+virtual=0xFBA00000 physical=0x90200000
+virtual=0xFBB00000 physical=0x90300000
+virtual=0xFBC00000 physical=0x90400000
+virtual=0xFBD00000 physical=0x91000000
+virtual=0xFBE00000 physical=0x91100000
+virtual=0xFBF00000 physical=0x91200000
+virtual=0xFC000000 physical=0x91300000
+virtual=0xFC100000 physical=0x91400000
+virtual=0xFC200000 physical=0x91500000
+virtual=0xFC300000 physical=0x91600000
+virtual=0xFC400000 physical=0x91700000
+virtual=0xFC500000 physical=0x91800000
+virtual=0xFC600000 physical=0x91900000
+virtual=0xFC700000 physical=0x91A00000
+virtual=0xFC800000 physical=0x91B00000
+virtual=0xFC900000 physical=0x91C00000
