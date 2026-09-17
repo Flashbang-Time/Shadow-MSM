@@ -1,7 +1,7 @@
 # Shadow-MSM
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-![Status: Halted](https://img.shields.io/badge/status-halted-orange)
+![Status: Active](https://img.shields.io/badge/status-active-green)
 ![Target: MSM6290](https://img.shields.io/badge/target-Qualcomm%20MSM6290-3253dc)
 ![CPU: ARMv5TEJ](https://img.shields.io/badge/CPU-ARM926EJ--S-0091bd)
 
@@ -9,12 +9,6 @@
 MSM hardware.**
 
 ![ZTE Vodafone K3765-Z](media/image4.png)
-
-
-> [!CAUTION]
-> Development is halted because the original test board was damaged when its
-> PMIC was accidentally knocked off during shield removal. The verified results
-> obtained before that failure are preserved below.
 
 Shadow-MSM currently targets the **ZTE/Vodafone K3765-Z**, built around the
 Qualcomm MSM6290. The project provides a reproducible path from the legacy
