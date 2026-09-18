@@ -53,7 +53,7 @@ Shadow-MSM takes a deliberately conservative approach:
 | PMIC family | Qualcomm PM6658 |
 | Stock runtime | Qualcomm AMSS over OKL4/Quartz |
 
-[![](https://img.youtube.com/vi/crjpbodBoiw/maxresdefault.jpg)](https://youtu.be/crjpbodBoiw?is=C3P5aLctI7j2Tc1t)
+[![Video of the modem booting](https://img.youtube.com/vi/crjpbodBoiw/maxresdefault.jpg)](https://youtu.be/crjpbodBoiw?is=C3P5aLctI7j2Tc1t)
 
 The stock AMSS image maps physical memory from `0x00100000` through
 approximately `0x01F5A000`. Shadow-MSM has also executed with a private stack
