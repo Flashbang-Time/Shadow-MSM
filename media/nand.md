@@ -1,14 +1,10 @@
 ARMPRG NAND COMPATIBILITY LIST
 
-Nov 09 2009 13:22:53
-
-Version == 14.00.00
-
-NPRG6246.HEX
-
-Multi-Image Boot Support only
-
-Copyright (c) 2007 by QUALCOMM, Incorporated. All Rights Reserved.
+ Nov 09 2009 13:22:53
+ Version == 14.00.00
+ NPRG6246.HEX
+ Multi-Image Boot Support only
+ Copyright (c) 2007 by QUALCOMM, Incorporated. All Rights Reserved.
      
 
 SAMSUNG_K9F2808
@@ -75,6 +71,9 @@ TOSHIBA_TC58512FT
 TOSHIBA_TCDAM82F1
 
 TOSHIBA_TC58DDM92F2
+
 TOSHIBA_TC58NYG0S3CXGJS
+
 TOSHIBA_TC58NYG2D9C
+
 TOSHIBA_TC58NYG0S3C
