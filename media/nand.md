@@ -1,5 +1,6 @@
 *ARMPRG NAND COMPATIBILITY LIST*
 
+Samsung
 ---------     
 
 SAMSUNG_K9F2808
@@ -44,13 +45,14 @@ SAMSUNG_KFG4GH6Q4M
 
 SAMSUNG_KFG4GH6Q4M
 
+Micron
 ---------
-
 MICRON_MT29F1G08
 
 MICRON_MT29F1G16
----------
 
+Hynix
+---------
 hynix_hyc0uce0mf2
 
 hynix_hye0uee0mf2_2
@@ -64,6 +66,8 @@ HYNIX_HSACS0PL0MCR
 HYNIX_HYG0SGH0MF3
 
 HYNIX_HYCOSEHOMF3P
+
+Toshiba
 ---------
 
 TOSHIBA_TC58512FT
