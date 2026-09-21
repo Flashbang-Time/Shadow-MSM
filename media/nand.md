@@ -1,6 +1,6 @@
 *ARMPRG NAND COMPATIBILITY LIST*
 
-     
+----------------------     
 
 SAMSUNG_K9F2808
 
