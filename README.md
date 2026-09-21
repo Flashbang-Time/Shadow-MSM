@@ -82,6 +82,8 @@ variant. The low-resolution package photograph does not expose the complete
 ordering suffix, however, so those capacities remain unverified until a
 physical Toshiba unit is identified at runtime.
 
+A complete armprg NAND list can be found [here](/media/nand.md)
+
 | Variant | Memory MCP | RAM | NAND | Status |
 |---|---|---:|---:|---|
 | P673A1 test unit | Hynix `H8ACS0PL0MCR` | 32 MiB | 128 MiB + 4 MiB OOB | Hardware verified |
