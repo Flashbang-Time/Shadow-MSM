@@ -40,9 +40,9 @@ Shadow-MSM takes a deliberately conservative approach:
 
 ## Verified target (P673A1/Hynix unit)
 
-| Component | Identification |
+| Component | Identification | 
 |---|---|
-| Device | ZTE/Vodafone K3765-Z |
+| Device | ZTE/Vodafone K3765-Z |                                
 | Firmware family | `BD_VDFP673A1V1.0.0B04` |
 | SoC | Qualcomm MSM6290 |
 | CPU | ARM926EJ-S r0p5, ARMv5TEJ |
@@ -51,6 +51,21 @@ Shadow-MSM takes a deliberately conservative approach:
 | NAND | Hynix `H8ACS0PL0MCR` |
 | NAND geometry | 128 MiB data + 4 MiB OOB |
 | PMIC family | Qualcomm PM6658 |
+| Stock runtime | Qualcomm AMSS over OKL4/Quartz |
+
+## Verified second target (P673A1/Hynix unit)
+
+| Component | Identification | 
+|---|---|
+| Device | ZTE/Vodafone K3765-Z |
+| Firmware family | `BD_VDFP673A1V1.0.0B02` |
+| SoC | Qualcomm MSM6290 |
+| CPU | ARM926EJ-S r0p5, ARMv5TEJ |
+| CPU MIDR | `0x41069265` |
+| RAM | 32 MiB address window |
+| NAND | Hynix `H8ACS0PL0ACR` |
+| NAND geometry | ? |
+| PMIC family | Qualcomm PM6658? |
 | Stock runtime | Qualcomm AMSS over OKL4/Quartz |
 
 video of the modem booting*
