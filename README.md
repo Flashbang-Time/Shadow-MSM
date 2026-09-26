@@ -53,7 +53,7 @@ Shadow-MSM takes a deliberately conservative approach:
 | PMIC family | Qualcomm PM6658 |
 | Stock runtime | Qualcomm AMSS over OKL4/Quartz |
 
-## Verified second target (P673A1/Hynix unit)
+## Second verified target (P673A1/Hynix unit)
 
 | Component | Identification | 
 |---|---|
