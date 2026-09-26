@@ -68,6 +68,22 @@ Shadow-MSM takes a deliberately conservative approach:
 | PMIC family | Qualcomm PM6658? |
 | Stock runtime | Qualcomm AMSS over OKL4/Quartz |
 
+## Note
+
+The second target is interesting, it seems to be running an older firmware version from another region
+RAM, NAND and CPU revision and still unknown since the second unit refuses to go into download.
+It is running "HR" firmware instead of the previous "SG" firmware of the first unit.
+
+Seems that the modem acknowledges DIAG_DLOAD_F but doesn't switch modes, this seems to be a firmware limitation or bug.
+QPST Software Download gives a generic "Couldn't Change Phone to Download Mode" error. 
+Comparing the dumped EFS of the new unit with the old unit reveals some discrepancies that can be unit specific but that
+has not been verified yet.
+
+I am still working on the situation and hope to get the unit into download.
+
+
+
+
 video of the modem booting*
 [![Video of the modem booting](https://img.youtube.com/vi/crjpbodBoiw/maxresdefault.jpg)](https://youtu.be/crjpbodBoiw?is=C3P5aLctI7j2Tc1t)
 
