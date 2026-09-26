@@ -82,7 +82,7 @@ has not been verified yet.
 I am still working on the situation and hope to get the unit into download.
 
 
-
+---------------
 
 video of the modem booting*
 [![Video of the modem booting](https://img.youtube.com/vi/crjpbodBoiw/maxresdefault.jpg)](https://youtu.be/crjpbodBoiw?is=C3P5aLctI7j2Tc1t)
