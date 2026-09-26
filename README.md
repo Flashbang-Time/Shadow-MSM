@@ -71,7 +71,7 @@ Shadow-MSM takes a deliberately conservative approach:
 ## Note
 
 The second target is interesting, it seems to be running an older firmware version from another region
-RAM, NAND and CPU revision and still unknown since the second unit refuses to go into download.
+RAM, NAND and CPU revision are still unknown since the second unit refuses to go into download.
 It is running "HR" firmware instead of the previous "SG" firmware of the first unit.
 
 Seems that the modem acknowledges DIAG_DLOAD_F but doesn't switch modes, this seems to be a firmware limitation or bug.
