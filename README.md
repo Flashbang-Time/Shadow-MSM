@@ -42,7 +42,7 @@ Shadow-MSM takes a deliberately conservative approach:
 
 | Component | Identification | 
 |---|---|
-| Device | ZTE/Vodafone K3765-Z |                                
+| Device | Black ZTE/Vodafone K3765-Z |                                
 | Firmware family | `BD_VDFP673A1V1.0.0B04` |
 | SoC | Qualcomm MSM6290 |
 | CPU | ARM926EJ-S r0p5, ARMv5TEJ |
@@ -57,12 +57,12 @@ Shadow-MSM takes a deliberately conservative approach:
 
 | Component | Identification | 
 |---|---|
-| Device | ZTE/Vodafone K3765-Z |
+| Device | White ZTE/Vodafone K3765-Z |
 | Firmware family | `BD_VDFP673A1V1.0.0B02` |
 | SoC | Qualcomm MSM6290 |
-| CPU | ARM926EJ-S r0p5, ARMv5TEJ |
+| CPU | ARM926EJ-S (?), ARMv5TEJ |
 | CPU MIDR | `0x41069265` |
-| RAM | 32 MiB address window |
+| RAM | ? |
 | NAND | Hynix `H8ACS0PL0ACR` |
 | NAND geometry | ? |
 | PMIC family | Qualcomm PM6658? |
