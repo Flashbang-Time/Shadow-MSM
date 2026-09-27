@@ -61,7 +61,7 @@ Shadow-MSM takes a deliberately conservative approach:
 | Firmware family | `BD_VDFP673A1V1.0.0B02` force updated to (IT) `BD_VDFP673A1V1.0.0B04` |
 | SoC | Qualcomm MSM6290 |
 | CPU | ARM926EJ-S (?), ARMv5TEJ |
-| CPU MIDR | `0x41069265` |
+| CPU MIDR | `0x41X6926X` |
 | RAM | ? |
 | NAND | Hynix `H8ACS0PL0ACR` |
 | NAND geometry | ? |
