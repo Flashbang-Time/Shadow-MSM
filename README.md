@@ -58,7 +58,7 @@ Shadow-MSM takes a deliberately conservative approach:
 | Component | Identification | 
 |---|---|
 | Device | White ZTE/Vodafone K3765-Z |
-| Firmware family | `BD_VDFP673A1V1.0.0B02` force updated to `BD_VDFP673A1V1.0.0B04` |
+| Firmware family | `BD_VDFP673A1V1.0.0B02` force updated to (IT) `BD_VDFP673A1V1.0.0B04` |
 | SoC | Qualcomm MSM6290 |
 | CPU | ARM926EJ-S (?), ARMv5TEJ |
 | CPU MIDR | `0x41069265` |
