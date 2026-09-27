@@ -82,6 +82,7 @@ has not been verified yet.
 The new downloader workflow is a bit more complex, this might be to a different revision? I cannot verify this claim unfortunately 
 but it may be very possible.
 
+```mermaid
 flowchart LR
     MODEM["K3765-Z<br/>Normal USB mode<br/>19D2:2002"]
     AT["AT interface<br/>COM18"]
@@ -99,6 +100,7 @@ flowchart LR
     D1 --> D2
     D2 --> WAIT
     WAIT -->|"USB re-enumerates"| DL
+```
 
 I am still working on the situation and hope to get the unit into download.
 
