@@ -79,6 +79,33 @@ QPST Software Download gives a generic "Couldn't Change Phone to Download Mode" 
 Comparing the dumped EFS of the new unit with the old unit reveals some discrepancies that can be unit specific but that
 has not been verified yet.
 
+The new downloader workflow is a bit more complex, this might be to a different revision? I cannot verify this claim unfortunately 
+but it may be very possible.
+
+                    ZTE firmware
+                         │
+AT+ZCDRUN=E ────────────►│
+                         │
+AT+ZCDRUN=8 ────────────►│
+                         │
+                         ▼
+              ┌──────────────────┐
+              │ DIAG 0x29 / 0x01 │
+              └──────────────────┘
+                         │
+              ┌──────────────────┐
+              │ DIAG 0x29 / 0x02 │
+              └──────────────────┘
+                         │
+                         ▼
+                    wait 10 sec
+                         │
+                         ▼
+                 USB enumeration
+                         │
+                         ▼
+                    downloader
+
 I am still working on the situation and hope to get the unit into download.
 
 
