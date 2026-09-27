@@ -82,29 +82,23 @@ has not been verified yet.
 The new downloader workflow is a bit more complex, this might be to a different revision? I cannot verify this claim unfortunately 
 but it may be very possible.
 
-                    ZTE firmware
-                         │
-AT+ZCDRUN=E ────────────►│
-                         │
-AT+ZCDRUN=8 ────────────►│
-                         │
-                         ▼
-              ┌──────────────────┐
-              │ DIAG 0x29 / 0x01 │
-              └──────────────────┘
-                         │
-              ┌──────────────────┐
-              │ DIAG 0x29 / 0x02 │
-              └──────────────────┘
-                         │
-                         ▼
-                    wait 10 sec
-                         │
-                         ▼
-                 USB enumeration
-                         │
-                         ▼
-                    downloader
+flowchart LR
+    MODEM["K3765-Z<br/>Normal USB mode<br/>19D2:2002"]
+    AT["AT interface<br/>COM18"]
+    E["AT+ZCDRUN=E"]
+    S8["AT+ZCDRUN=8"]
+    D1["DIAG 0x29<br/>subcommand 0x0001"]
+    D2["DIAG 0x29<br/>subcommand 0x0002"]
+    WAIT["Wait / USB re-enumeration"]
+    DL["Qualcomm downloader<br/>19D2:0016"]
+
+    MODEM --> AT
+    AT --> E
+    E -->|"accepted"| S8
+    S8 -->|"accepted"| D1
+    D1 --> D2
+    D2 --> WAIT
+    WAIT -->|"USB re-enumerates"| DL
 
 I am still working on the situation and hope to get the unit into download.
 
