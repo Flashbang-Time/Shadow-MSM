@@ -1362,8 +1362,7 @@ shadow-msm# [   20.267883] shadow-sdcc: request CMD1 arg=40000000 data=none bloc
 [   38.441253] shadow-sdcc: request CMD1 arg=40000000 data=none blocks=0 blksz=0 ios=400000Hz/1bit mode=1 power=2 regs=00009113/00000083
 [   38.443847] shadow-sdcc: CMD1 arg=40000000 ok status=02400040 resp=00000000
 [   38.511840] shadow-sdcc: request CMD1 arg=40000000 data=none blocks=0 blksz=0 ios=400000Hz/1bit mode=1 power=2 regs=00009113/00000083
-[   38.514465] shadow-sdcc: CMD1 arg=40000000 ok status=02400040 resp=00000000
-[   38.582061] shadow-sdcc: request CMD1 arg=40000000 data=none blocks=0 blksz=0 ios=400000Hz/1b
+
 
 
 
