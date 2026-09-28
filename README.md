@@ -79,8 +79,9 @@ QPST Software Download gives a generic "Couldn't Change Phone to Download Mode" 
 Comparing the dumped EFS of the new unit with the old unit reveals some discrepancies that can be unit specific but that
 has not been verified yet.~~
 
-The new downloader workflow is a bit more complex, this might be to a different revision? I cannot verify this claim unfortunately 
-but it may be very possible.
+The new downloader workflow is a bit more complex, ~~this might be to a different revision? I cannot verify this claim unfortunately 
+but it may be very possible.~~ The second target is an older revision, this may explain the extra hoops for download mode. It uses an older 
+compatible PMIC but is incompatible with the first target's Linux image due to differences as observed in [/outputs/FIRST_2NDTARGET_BOOT.md](this log).
 
 ```mermaid
 flowchart TD
