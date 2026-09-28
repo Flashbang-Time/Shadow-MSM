@@ -74,10 +74,10 @@ The second target is interesting, it seems to be running an older firmware versi
 RAM, NAND and CPU revision are still unknown since the second unit refuses to go into download.
 It is running "HR" firmware instead of the previous "SG" firmware of the first unit.
 
-Seems that the modem acknowledges DIAG_DLOAD_F but doesn't switch modes, this seems to be a firmware limitation or bug.
+~~The modem acknowledges DIAG_DLOAD_F but doesn't switch modes, this seems to be a firmware limitation or bug.
 QPST Software Download gives a generic "Couldn't Change Phone to Download Mode" error. 
 Comparing the dumped EFS of the new unit with the old unit reveals some discrepancies that can be unit specific but that
-has not been verified yet.
+has not been verified yet.~~
 
 The new downloader workflow is a bit more complex, this might be to a different revision? I cannot verify this claim unfortunately 
 but it may be very possible.
