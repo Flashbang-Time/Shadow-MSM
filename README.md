@@ -103,12 +103,9 @@ flowchart TD
     K --> L["VID:19D2 PID:0016"]
     L --> M["ZTE WCDMA Technologies MSM"]
     
-    M --> N["Qualcomm downloader / MSM mode"]
-    N --> O["Shadow-MSM"]
-    O --> P["ARMPRG → BL0 → BL1"]
 ```
 
-I am still working on the situation and hope to get the unit into download.
+The modem successfully went into download using this flow. The torture can continue.
 
 
 ---------------
