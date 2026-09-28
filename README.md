@@ -83,23 +83,29 @@ The new downloader workflow is a bit more complex, this might be to a different 
 but it may be very possible.
 
 ```mermaid
-flowchart LR
-    MODEM["K3765-Z<br/>Normal USB mode<br/>19D2:2002"]
-    AT["AT interface<br/>COM18"]
-    E["AT+ZCDRUN=E"]
-    S8["AT+ZCDRUN=8"]
-    D1["DIAG 0x29<br/>subcommand 0x0001"]
-    D2["DIAG 0x29<br/>subcommand 0x0002"]
-    WAIT["Wait / USB re-enumeration"]
-    DL["Qualcomm downloader<br/>19D2:0016"]
-
-    MODEM --> AT
-    AT --> E
-    E -->|"accepted"| S8
-    S8 -->|"accepted"| D1
-    D1 --> D2
-    D2 --> WAIT
-    WAIT -->|"USB re-enumerates"| DL
+flowchart TD
+    A["K3765-Z<br/>VID:19D2 PID:2002<br/>Normal mode"] --> B["4B 04 0E 00<br/>Liveness check"]
+    B --> C["41<br/>Put modem into offline preparation"]
+    
+    C --> D["4B A3 05 00 + 128-byte AMSS block<br/>Vendor download check"]
+    
+    D --> E["29 01 00<br/>Put Phone Offline"]
+    E -->|"success"| F["4B 04 0E 00<br/>Poll offline status"]
+    E -->|"failure ×3"| G["Close diagnostic port<br/>Reopen"]
+    G --> H["Wait ~8 seconds"]
+    H --> I["29 01 00<br/>Retry after reopen"]
+    I --> F
+    
+    F -->|"status = 0"| J["3A<br/>Switch to downloader"]
+    
+    J --> K["USB re-enumeration"]
+    
+    K --> L["VID:19D2 PID:0016"]
+    L --> M["ZTE WCDMA Technologies MSM"]
+    
+    M --> N["Qualcomm downloader / MSM mode"]
+    N --> O["Shadow-MSM"]
+    O --> P["ARMPRG → BL0 → BL1"]
 ```
 
 I am still working on the situation and hope to get the unit into download.
