@@ -80,8 +80,10 @@ Comparing the dumped EFS of the new unit with the old unit reveals some discrepa
 has not been verified yet.~~
 
 The new downloader workflow is a bit more complex, ~~this might be to a different revision? I cannot verify this claim unfortunately 
-but it may be very possible.~~ The second target is an older revision, this may explain the extra hoops for download mode. It uses an older 
-compatible PMIC but is incompatible with the first target's Linux image due to differences as observed in [this log](/outputs/FIRST_2NDTARGET_BOOT.md).
+but it may be very possible.~~ ~~The second target is an older revision, this may explain the extra hoops for download mode. It uses an older 
+compatible PMIC but is incompatible with the first target's Linux image due to differences as observed in [this log](/outputs/FIRST_2NDTARGET_BOOT.md).~~
+
+Putting an SD Card into the unit fixes the issue, I am not sure why yet.
 
 ```mermaid
 flowchart TD
@@ -106,7 +108,7 @@ flowchart TD
     
 ```
 
-The modem successfully went into download using this flow. The torture can continue.
+The modem successfully went into download using this flow.
 
 
 ---------------
