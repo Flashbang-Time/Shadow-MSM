@@ -146,6 +146,7 @@ A complete armprg NAND list can be found [here](/media/nand.md)
 
 | Variant | Memory MCP | RAM | NAND | Status |
 |---|---|---:|---:|---|
+| P673A1 test unit #2 | Hynix `H8ACS0PL0ACR` | 32 MiB | 128 MiB + 4 MiB OOB? | Hardware verified |
 | P673A1 test unit | Hynix `H8ACS0PL0MCR` | 32 MiB | 128 MiB + 4 MiB OOB | Hardware verified |
 | FCC P673A1 sample (`B02`) | Toshiba `TY8000A` family | Possibly 64 MiB | Possibly 128 MiB | Hardware family confirmed; capacities inferred |
 
